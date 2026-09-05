@@ -133,7 +133,7 @@ def _parse_rows(content: bytes) -> list[tuple[date, dict[str, float]]]:
             )
         month_col = frame.columns[0]
         prev = None
-        for key, value in zip(frame[month_col], frame[column]):
+        for key, value in zip(frame[month_col], frame[column], strict=True):
             if pd.isna(key) and pd.isna(value):
                 continue  # fully blank row
             month_date = _month_end(key, sheet_name)

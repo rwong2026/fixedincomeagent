@@ -258,9 +258,8 @@ class ZillowFormatErrorTests(_ShelterTestCase):
         with mock.patch.object(
             shelter_rents, "_request",
             side_effect=requests.ConnectionError("boom"),
-        ):
-            with self.assertRaises(requests.ConnectionError):
-                shelter_rents.get_shelter_rents("2026-09-05")
+        ), self.assertRaises(requests.ConnectionError):
+            shelter_rents.get_shelter_rents("2026-09-05")
 
 
 @pytest.mark.unit

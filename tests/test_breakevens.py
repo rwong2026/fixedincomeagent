@@ -111,7 +111,7 @@ class BreakevensFetchTests(unittest.TestCase):
                 mock.patch.object(fred, "_request", side_effect=_request_stub(captured=captured)):
             inflation_breakevens.get_inflation_breakevens("2025-09-30", 90)
         for series_id, calls in captured.items():
-            for path, params in calls:
+            for _path, params in calls:
                 self.assertEqual(params["realtime_start"], "2025-09-30", series_id)
                 self.assertEqual(params["realtime_end"], "2025-09-30", series_id)
                 self.assertEqual(params["observation_end"], "2025-09-30", series_id)
@@ -123,7 +123,7 @@ class BreakevensFetchTests(unittest.TestCase):
                 mock.patch.object(fred, "_request", side_effect=_request_stub(captured=captured)):
             inflation_breakevens.get_inflation_breakevens("2026-09-01")
         for series_id, calls in captured.items():
-            for path, params in calls:
+            for _path, params in calls:
                 self.assertEqual(params["realtime_start"], "2026-08-31", series_id)
                 self.assertEqual(params["realtime_end"], "2026-08-31", series_id)
                 self.assertEqual(params["observation_end"], "2026-09-01", series_id)

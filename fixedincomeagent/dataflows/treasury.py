@@ -138,7 +138,7 @@ def _parse_yield_csv(text: str) -> tuple[list[str], list[tuple[date, dict]]]:
             continue
         values = {
             tenor: val.strip()
-            for tenor, val in zip(tenors, line[1:])
+            for tenor, val in zip(tenors, line[1:], strict=True)
             if val.strip()
         }
         if values:

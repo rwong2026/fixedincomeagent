@@ -34,7 +34,7 @@ def _chart(subcaption, labels, columns, with_actuals=True):
     DAY labels in ``labels`` only ("" = cell blank in the source); release
     markers like "PCE Jul" have no data points in the real file.
     """
-    n_days = sum(1 for l in labels if "/" in l)
+    n_days = sum(1 for label in labels if "/" in label)
     dataset = [
         {"seriesname": name, "data": [{"value": v} for v in columns[name]]}
         for name in _NOWCAST_SERIES
@@ -51,7 +51,7 @@ def _chart(subcaption, labels, columns, with_actuals=True):
         )
     return {
         "chart": {"subcaption": subcaption},
-        "categories": [{"category": [{"label": l} for l in labels]}],
+        "categories": [{"category": [{"label": label} for label in labels]}],
         "dataset": dataset,
     }
 
@@ -235,9 +235,8 @@ class NowcastFormatErrorTests(_NowcastTestCase):
         with mock.patch.object(
             inflation_nowcast, "_request",
             side_effect=requests.ConnectionError("boom"),
-        ):
-            with self.assertRaises(requests.ConnectionError):
-                inflation_nowcast.get_inflation_nowcast("2026-09-03")
+        ), self.assertRaises(requests.ConnectionError):
+            inflation_nowcast.get_inflation_nowcast("2026-09-03")
 
 
 @pytest.mark.unit

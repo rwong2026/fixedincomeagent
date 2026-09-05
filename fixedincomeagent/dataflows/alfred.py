@@ -13,13 +13,9 @@ import logging
 from datetime import datetime, timedelta
 
 from .fred import (
-    FRED_API_BASE,
-    FRED_TZ,
     MAX_ROWS,
-    REQUEST_TIMEOUT,
     _fred_today,
     _request,
-    get_api_key,
 )
 
 logger = logging.getLogger(__name__)

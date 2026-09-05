@@ -22,6 +22,7 @@ import fixedincomeagent.default_config as default_config
 from fixedincomeagent.dataflows import cot_data
 from fixedincomeagent.dataflows.config import set_config
 
+
 # Three weekly TFF rows, newest first, as the Socrata API returns them.
 def _row(date, oi, d_long, d_short, am_long, am_short, lm_long, lm_short):
     return {
@@ -207,9 +208,8 @@ class CotFormatErrorTests(_CotTestCase):
             cot_data,
             "_request",
             side_effect=requests.ConnectionError("boom"),
-        ):
-            with self.assertRaises(requests.ConnectionError):
-                cot_data.get_cot_data("2026-09-05")
+        ), self.assertRaises(requests.ConnectionError):
+            cot_data.get_cot_data("2026-09-05")
 
 
 @pytest.mark.unit

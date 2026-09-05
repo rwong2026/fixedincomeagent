@@ -86,7 +86,7 @@ class AlfredMockedTests(unittest.TestCase):
             get_alfred_vintage("CPIAUCSL", "2023-01-15", look_back_days=90)
 
         realtime = {"realtime_start": "2023-01-15", "realtime_end": "2023-01-15"}
-        for path, params in calls:
+        for _path, params in calls:
             self.assertEqual(params["realtime_start"], realtime["realtime_start"])
             self.assertEqual(params["realtime_end"], realtime["realtime_end"])
         obs_params = dict(calls)[ "series/observations"]

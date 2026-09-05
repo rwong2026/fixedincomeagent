@@ -148,7 +148,7 @@ def get_ism_prices_paid(curr_date: str) -> str:
     by_month = {(d.year, d.month): v for d, v in rows}
     mom = {}
     months = sorted(by_month)
-    for prev, cur in zip(months, months[1:]):
+    for prev, cur in zip(months, months[1:], strict=False):
         if (cur[0] - prev[0]) * 12 + cur[1] - prev[1] == 1:
             mom[cur] = by_month[cur] - by_month[prev]
 

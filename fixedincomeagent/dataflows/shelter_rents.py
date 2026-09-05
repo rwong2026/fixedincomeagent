@@ -153,7 +153,7 @@ def _parse_zillow(text: str) -> list[tuple[date, float]]:
             "may have changed."
         )
     out = []
-    for d, raw in zip(col_dates, us[4:]):
+    for d, raw in zip(col_dates, us[4:], strict=True):
         raw = raw.strip()
         if not raw:
             continue
@@ -227,7 +227,7 @@ def _parse_apartment_list(text: str, path: str) -> list[tuple[date, float]]:
             "format may have changed."
         )
     out = []
-    for d, raw in zip(col_dates, national[bed + 1:]):
+    for d, raw in zip(col_dates, national[bed + 1:], strict=True):
         raw = raw.strip()
         if not raw:
             continue

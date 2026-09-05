@@ -168,9 +168,8 @@ class GscpiFormatErrorTests(_GscpiTestCase):
         with mock.patch.object(
             supply_chain_pressure, "_request",
             side_effect=requests.ConnectionError("boom"),
-        ):
-            with self.assertRaises(requests.ConnectionError):
-                supply_chain_pressure.get_supply_chain_pressure("2022-05-15")
+        ), self.assertRaises(requests.ConnectionError):
+            supply_chain_pressure.get_supply_chain_pressure("2022-05-15")
 
 
 @pytest.mark.unit

@@ -1,10 +1,12 @@
 import pytest
+
 from fixedincomeagent.agents.schemas import (
     DirectionCall,
     ShapeCall,
     render_direction_call,
     render_shape_call,
 )
+
 
 def test_direction_call_valid():
     dc = DirectionCall(

@@ -254,11 +254,10 @@ class SceFormatErrorTests(_SceTestCase):
             consumer_inflation_expectations,
             "_request",
             side_effect=requests.ConnectionError("boom"),
-        ):
-            with self.assertRaises(requests.ConnectionError):
-                consumer_inflation_expectations.get_consumer_inflation_expectations(
-                    "2022-05-31"
-                )
+        ), self.assertRaises(requests.ConnectionError):
+            consumer_inflation_expectations.get_consumer_inflation_expectations(
+                "2022-05-31"
+            )
 
 
 @pytest.mark.unit

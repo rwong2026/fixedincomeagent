@@ -107,7 +107,7 @@ def _parse_rows(text: str) -> list[tuple[date, float]]:
             f"vintage column among {columns[1:]!r}. The file format may have "
             "changed."
         )
-    for (prev_name, prev), (curr_name, curr) in zip(vintages, vintages[1:]):
+    for (prev_name, prev), (curr_name, curr) in zip(vintages, vintages[1:], strict=False):
         if curr < prev:
             raise GscpiFormatError(
                 f"New York Fed GSCPI file ({DOWNLOAD_URL}): vintage columns "
@@ -117,7 +117,7 @@ def _parse_rows(text: str) -> list[tuple[date, float]]:
     current_col = vintages[-1][0]
 
     rows: list[tuple[date, float]] = []
-    for obs, value in zip(frame["Date"], frame[current_col]):
+    for obs, value in zip(frame["Date"], frame[current_col], strict=True):
         if pd.isna(obs) and pd.isna(value):
             continue  # blank trailer row
         if pd.isna(value):

@@ -1,5 +1,6 @@
 from fixedincomeagent.default_config import DEFAULT_CONFIG
 
+
 def test_fi_tenors_present():
     assert "fi_tenors" in DEFAULT_CONFIG
     assert DEFAULT_CONFIG["fi_tenors"] == ["2Y", "5Y", "10Y", "30Y"]
