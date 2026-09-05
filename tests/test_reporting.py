@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.reporting import write_report_tree
+from fixedincomeagent.graph.trading_graph import TradingAgentsGraph
+from fixedincomeagent.reporting import write_report_tree
 
 
 def _state():

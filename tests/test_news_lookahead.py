@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-import tradingagents.dataflows.yfinance_news as ynews
-from tradingagents.dataflows.date_window import in_window
+import fixedincomeagent.dataflows.yfinance_news as ynews
+from fixedincomeagent.dataflows.date_window import in_window
 
 
 def _epoch(date_str):

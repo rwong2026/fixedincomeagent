@@ -5,8 +5,8 @@ import unittest
 
 import pytest
 
-import tradingagents.default_config as default_config
-from tradingagents.dataflows.config import get_config, set_config
+import fixedincomeagent.default_config as default_config
+from fixedincomeagent.dataflows.config import get_config, set_config
 
 
 @pytest.mark.unit

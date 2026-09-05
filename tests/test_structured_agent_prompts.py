@@ -15,11 +15,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import tradingagents.agents.analysts.sentiment_analyst as sentiment
-from tradingagents.agents.managers.portfolio_manager import create_portfolio_manager
-from tradingagents.agents.managers.research_manager import create_research_manager
-from tradingagents.agents.trader.trader import create_trader
-from tradingagents.agents.utils.structured import NO_EXTERNAL_TOOLS
+import fixedincomeagent.agents.analysts.sentiment_analyst as sentiment
+from fixedincomeagent.agents.managers.portfolio_manager import create_portfolio_manager
+from fixedincomeagent.agents.managers.research_manager import create_research_manager
+from fixedincomeagent.agents.trader.trader import create_trader
+from fixedincomeagent.agents.utils.structured import NO_EXTERNAL_TOOLS
 
 
 def _capturing_llm(captured: dict, result):
@@ -45,7 +45,7 @@ def _prompt_text(prompt) -> str:
 
 @pytest.mark.unit
 def test_trader_prompt_states_constraint():
-    from tradingagents.agents.schemas import TraderAction, TraderProposal
+    from fixedincomeagent.agents.schemas import TraderAction, TraderProposal
 
     captured = {}
     llm = _capturing_llm(captured, TraderProposal(action=TraderAction.BUY, reasoning="x"))
@@ -59,7 +59,7 @@ def test_trader_prompt_states_constraint():
 
 @pytest.mark.unit
 def test_research_manager_prompt_states_constraint():
-    from tradingagents.agents.schemas import PortfolioRating, ResearchPlan
+    from fixedincomeagent.agents.schemas import PortfolioRating, ResearchPlan
 
     captured = {}
     llm = _capturing_llm(
@@ -80,7 +80,7 @@ def test_research_manager_prompt_states_constraint():
 
 @pytest.mark.unit
 def test_portfolio_manager_prompt_states_constraint():
-    from tradingagents.agents.schemas import PortfolioDecision, PortfolioRating
+    from fixedincomeagent.agents.schemas import PortfolioDecision, PortfolioRating
 
     captured = {}
     llm = _capturing_llm(
@@ -108,7 +108,7 @@ def test_portfolio_manager_prompt_states_constraint():
 
 @pytest.mark.unit
 def test_sentiment_prompt_states_constraint(monkeypatch):
-    from tradingagents.agents.schemas import SentimentBand, SentimentReport
+    from fixedincomeagent.agents.schemas import SentimentBand, SentimentReport
 
     # Pre-fetched sources are stubbed so the prompt builds without network I/O.
     monkeypatch.setattr(sentiment, "fetch_stocktwits_messages", lambda *a, **k: "st")
@@ -134,8 +134,8 @@ def test_sentiment_prompt_states_constraint(monkeypatch):
 def test_tool_using_analysts_keep_their_date_guidance():
     # The analysts that really do call tools keep the wording that anchors their
     # tool date ranges (#836) — this fix is scoped to no-tool agents.
-    import tradingagents.agents.analysts.market_analyst as market
-    import tradingagents.agents.analysts.news_analyst as news
+    import fixedincomeagent.agents.analysts.market_analyst as market
+    import fixedincomeagent.agents.analysts.news_analyst as news
     for module in (market, news):
         assert "tool-call date ranges" in inspect.getsource(module)
 

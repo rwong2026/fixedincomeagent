@@ -7,7 +7,7 @@ the market ToolNode).
 """
 import pytest
 
-from tradingagents.graph.trading_graph import TradingAgentsGraph
+from fixedincomeagent.graph.trading_graph import TradingAgentsGraph
 
 
 @pytest.mark.unit
