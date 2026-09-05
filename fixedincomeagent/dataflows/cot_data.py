@@ -8,8 +8,9 @@ Rows are weekly (as of Tuesday, released Friday), newest first when ordered
 by ``report_date_as_yyyy_mm_dd DESC``, with numeric fields returned as JSON
 strings. The report's market display names are NOT stable over time (e.g.
 "10-YEAR U.S. TREASURY NOTES" was renamed "UST 10Y NOTE", "U.S. TREASURY
-BONDS" became "ULTRA UST BOND"), so contracts are keyed by the stable
-``cftc_contract_market_code``.
+BONDS" became "UST BOND" in Feb 2022), and the classic 30-year bond and the
+Ultra Bond trade as DISTINCT concurrent contracts (codes 020601 and 020604),
+so contracts are keyed by the stable ``cftc_contract_market_code``.
 
 Fields read per weekly row: ``open_interest_all``,
 ``dealer_positions_long_all`` / ``dealer_positions_short_all``,
@@ -46,13 +47,18 @@ FETCH_ROWS = MAX_ROWS + 1
 API_URL = "https://publicreporting.cftc.gov/resource/gpe5-46if.json"
 
 # Friendly contract name -> (stable CFTC contract market code, display name).
-# Codes verified 2026-09-05 against the API's distinct-name query; display
-# names use the long form since the feed's short names change over time.
+# Codes verified 2026-09-05 against the API's distinct-code query: 020601 is
+# the CLASSIC 30-year bond future ("U.S. TREASURY BONDS" 2006-2022, renamed
+# "UST BOND" in Feb 2022); 020604 is the separate Ultra Bond contract
+# ("LONG-TERM U.S. TREASURY BONDS" 2010-2016, "ULTRA U.S. TREASURY BONDS"
+# 2016-2022, "ULTRA UST BOND" since). The two trade concurrently and must
+# not be conflated.
 CONTRACTS = {
     "UST_2Y": ("042601", "2-Year U.S. Treasury Note futures"),
     "UST_5Y": ("044601", "5-Year U.S. Treasury Note futures"),
     "UST_10Y": ("043602", "10-Year U.S. Treasury Note futures"),
-    "UST_30Y": ("020604", "Ultra U.S. Treasury Bond futures"),
+    "UST_30Y": ("020601", "30-Year U.S. Treasury Bond futures"),
+    "UST_ULTRA": ("020604", "Ultra U.S. Treasury Bond futures"),
 }
 
 # (report column, long field, short field).
@@ -98,8 +104,8 @@ def _parse_rows(payload: object) -> list[tuple[date, dict[str, int]]]:
             f"CFTC COT Socrata API ({API_URL}) returned a non-list payload "
             f"({str(payload)[:120]!r}). The API format may have changed."
         )
-    rows = []
-    prev = None
+    rows: list[tuple[date, dict[str, int]]] = []
+    prev: date | None = None
     for row in payload:
         missing = [f for f in REQUIRED_FIELDS if f not in row]
         if missing:
@@ -147,8 +153,12 @@ def _load_rows(code: str, end: date) -> list[tuple[date, dict[str, int]]]:
     """
     path = _cache_path(code, end)
     if os.path.exists(path) and time.time() - os.path.getmtime(path) < CACHE_TTL.total_seconds():
-        with open(path, "rb") as f:
-            return _parse_rows(json.load(f))
+        try:
+            with open(path, "rb") as f:
+                return _parse_rows(json.load(f))
+        except (OSError, json.JSONDecodeError, CotFormatError):
+            logger.warning("Discarding corrupt COT cache file %s; refetching.", path)
+            os.unlink(path)
     params = {
         "$select": ",".join(REQUIRED_FIELDS),
         "$where": (
@@ -178,7 +188,7 @@ def get_cot_data(curr_date: str, contract: str = "UST_10Y") -> str:
             or before this date are used, so a historical run never sees
             future positioning.
         contract: One of ``UST_2Y``, ``UST_5Y``, ``UST_10Y`` (default),
-            ``UST_30Y`` (Ultra Bond).
+            ``UST_30Y`` (classic 30-year bond), ``UST_ULTRA`` (Ultra Bond).
 
     Returns:
         A markdown report: latest net positioning (long minus short) of

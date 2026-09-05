@@ -132,6 +132,29 @@ class CotReportTests(_CotTestCase):
         params = m.call_args.args[1]
         self.assertIn("042601", params["$where"])
 
+    def test_contract_mapping_contents(self):
+        # Verified 2026-09-05 against the Socrata dataset's distinct codes:
+        # 020601 is the classic 30Y bond ("UST BOND" since Feb 2022), 020604
+        # the separate Ultra Bond ("ULTRA UST BOND").
+        self.assertEqual(
+            cot_data.CONTRACTS,
+            {
+                "UST_2Y": ("042601", "2-Year U.S. Treasury Note futures"),
+                "UST_5Y": ("044601", "5-Year U.S. Treasury Note futures"),
+                "UST_10Y": ("043602", "10-Year U.S. Treasury Note futures"),
+                "UST_30Y": ("020601", "30-Year U.S. Treasury Bond futures"),
+                "UST_ULTRA": ("020604", "Ultra U.S. Treasury Bond futures"),
+            },
+        )
+
+    def test_server_side_date_filter(self):
+        with mock.patch.object(
+            cot_data, "_request", side_effect=_stub()
+        ) as m:
+            cot_data.get_cot_data("2026-08-27")
+        params = m.call_args.args[1]
+        self.assertIn("report_date_as_yyyy_mm_dd <= '2026-08-27'", params["$where"])
+
     def test_unknown_contract_raises_value_error(self):
         with self.assertRaises(ValueError) as ctx:
             cot_data.get_cot_data("2026-09-05", contract="BANANA")
@@ -222,6 +245,16 @@ class CotCacheTests(_CotTestCase):
             os.utime(path, (stale, stale))
             cot_data.get_cot_data("2026-09-05")
         self.assertEqual(m.call_count, 2)
+
+    def test_corrupt_cache_is_refetched(self):
+        with mock.patch.object(cot_data, "_request", side_effect=_stub()) as m:
+            cot_data.get_cot_data("2026-09-05")
+            path = os.path.join(self._cache_dir(), os.listdir(self._cache_dir())[0])
+            with open(path, "w") as f:
+                f.write("{not json")
+            out = cot_data.get_cot_data("2026-09-05")
+        self.assertEqual(m.call_count, 2)
+        self.assertIn("## CFTC COT Positioning", out)
 
 
 if __name__ == "__main__":
