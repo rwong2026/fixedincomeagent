@@ -467,6 +467,41 @@ def render_shape_outlook(outlook: ShapeOutlook) -> str:
     return "\n\n".join(blocks)
 
 
+class TraderDecision(BaseModel):
+    """Structured yield-curve decision produced by the Fixed-Income Trader.
+
+    The trader turns the direction and shape research managers' outlooks into
+    the desk's concrete calls: one DirectionCall per configured tenor and one
+    ShapeCall per configured spread/butterfly. Rendered markdown is stored
+    under the same ``trader_investment_plan`` state key the equity trader
+    uses, so downstream plumbing works unchanged.
+    """
+
+    direction_calls: list[DirectionCall] = Field(
+        description=(
+            "Exactly one DirectionCall per configured tenor, one entry per "
+            "tenor, no tenor skipped or duplicated."
+        ),
+    )
+    shape_calls: list[ShapeCall] = Field(
+        description=(
+            "Exactly one ShapeCall per configured spread/butterfly, one "
+            "entry per spread, none skipped or duplicated."
+        ),
+    )
+
+
+def render_trader_decision(decision: TraderDecision) -> str:
+    """Render a TraderDecision to markdown for state, reports, and downstream agents."""
+    direction = "\n\n".join(
+        render_direction_call(call) for call in decision.direction_calls
+    )
+    shape = "\n\n".join(render_shape_call(call) for call in decision.shape_calls)
+    return (
+        f"## Direction Calls\n\n{direction}\n\n## Shape Calls\n\n{shape}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Fixed-Income: Macro/Policy Report
 # ---------------------------------------------------------------------------

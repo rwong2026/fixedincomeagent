@@ -13,6 +13,7 @@ from fixedincomeagent.agents import (
     create_curve_technicals_analyst,
     create_direction_research_manager,
     create_fed_speak_analyst,
+    create_fi_trader,
     create_flattener_researcher,
     create_fundamentals_analyst,
     create_higher_yields_researcher,
@@ -206,7 +207,7 @@ class GraphSetup:
 
         Higher Yields <-> Lower Yields (direction debate) -> Direction
         Research Manager -> Steepener <-> Flattener (shape debate) -> Shape
-        Research Manager.
+        Research Manager -> FI Trader.
         """
         workflow.add_node(
             "Higher Yields Researcher",
@@ -246,8 +247,9 @@ class GraphSetup:
                 self.conditional_logic.should_continue_shape_debate,
                 SHAPE_DEBATE_PATH_MAP,
             )
-        # PHASE 5 CUT POINT: FI Trader -> risk check -> FI Portfolio Manager
-        # extend the graph here; until then the Shape Research Manager is the
-        # terminal node. Replace this edge with
-        # ("Shape Research Manager" -> "FI Trader") in Phase 5.
-        workflow.add_edge("Shape Research Manager", END)
+        # PHASE 5 CUT POINT: FI Trader is wired (Task 5.1); the risk check and
+        # FI Portfolio Manager extend the graph here in Tasks 5.2/5.3. Until
+        # then the FI Trader is the terminal node.
+        workflow.add_node("FI Trader", create_fi_trader(self.quick_thinking_llm))
+        workflow.add_edge("Shape Research Manager", "FI Trader")
+        workflow.add_edge("FI Trader", END)

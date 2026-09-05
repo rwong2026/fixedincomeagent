@@ -2,8 +2,8 @@
 
 FI mode activates when every selected analyst is an FI analyst; the graph then
 runs analysts -> Higher/Lower Yields debate -> Direction Research Manager ->
-Steepener/Flattener debate -> Shape Research Manager -> END (temporary
-terminal until Phase 5 adds FI Trader / risk / PM).
+Steepener/Flattener debate -> Shape Research Manager -> FI Trader (Task 5.1;
+risk / PM follow in Tasks 5.2/5.3).
 
 Offline: structure is inspected via the compiled graph's edge list, and the
 full path is invoked with a stub LLM (no network, no tool calls).
@@ -119,9 +119,12 @@ def test_direction_manager_hands_off_to_shape_debate():
 
 
 @pytest.mark.unit
-def test_shape_manager_is_temporary_terminal():
-    # PHASE 5 CUT POINT: this edge becomes Shape Manager -> FI Trader.
-    assert ("Shape Research Manager", END) in _edges(FI_KEYS)
+def test_shape_manager_routes_to_fi_trader():
+    # Task 5.1 wired the FI Trader; Tasks 5.2/5.3 extend past it (risk, PM).
+    edges = _edges(FI_KEYS)
+    assert ("Shape Research Manager", "FI Trader") in edges
+    # PHASE 5 CUT POINT: ("FI Trader", END) becomes FI Trader -> risk check.
+    assert ("FI Trader", END) in edges
 
 
 @pytest.mark.unit
@@ -215,3 +218,5 @@ def test_fi_graph_invokes_end_to_end_offline():
     assert shape["judge_decision"] == "stub response"
     assert shape["direction_outcome"] == "stub response"  # manager hand-off
     assert shape["count"] == 2
+    # FI Trader runs last (free-text stub path).
+    assert final["trader_investment_plan"] == "stub response"
