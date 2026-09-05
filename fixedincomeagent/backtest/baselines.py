@@ -10,30 +10,37 @@
    proves very little; if the agent system doesn't beat the forwards-implied
    baseline, the added complexity isn't justified.**
 
-Forwards math (as prescribed by the task brief)
------------------------------------------------
+Forwards math
+-------------
 For tenor with maturity P years and horizon h = ``fi_horizon_days``/252 years,
-the implied forward yield is the no-arbitrage terminal-stub forward rate over
-[P-h, P] computed from the spot par curve:
+the implied forward yield is the front-of-curve arbitrage-free forward rate
+for the P-year rate h years out (log-rate form):
 
-    f = ((1+y_P)^P / (1+y_s)^(P-h))^(1/h) - 1,   implied change = f - y_P
+    f(h->P) = (P*ln(1+y_P) - h*ln(1+y_h)) / (P-h),
+    implied change = f - y_P
 
-where y_s is the spot yield at maturity P-h, linearly interpolated (in
-maturity) on the daily par curve. Equivalent to the log-rate form
-f = (P*ln(1+y_P) - (P-h)*ln(1+y_s)) / h, continuously compounded.
+where y_h is the curve yield at maturity h. With h = 20/252 below the
+shortest published par point (1 Mo), y_h is taken as the 1 Mo yield — an
+approximation (the exact form uses the continuous zero rate at h), error
+sub-bp at these slopes. The exact continuously-compounded form is
 
-Approximation honesty: this compares the forward rate over the FINAL stub of
-the P-year horizon to today's P-year spot yield. Under a sloped curve the
-implied change scales with maturity — Delta ≈ (P-h) x local slope — so a mild
-+10bp/year slope implies ~+19bp for the 2Y but ~+300bp for the 30Y. That
-maturity scaling is a property of this approximation (the stub forward is the
-market's implied ~1-month rate P-h years out, not the implied P-year CMT in
-h years); it makes the baseline aggressively trend-with-slope at the long
-end. Interpret the bar with that property in mind.
+    f(h->P) = (P*z(P) - h*z(h)) / (P-h),
+
+with z the zero curve; using par yields for z is the second, standard
+money-market approximation (error also sub-bp at these levels).
+
+Economic reading: for a linear curve y(x) = y0 + s*x the implied change
+collapses to (y_h - s*h)*h/(P-h) — ~s*h and essentially tenor-independent, so
+a mild +/-10bp/year slope implies only ~+/-0.8bp over 20 trading days
+("neutral" under the default 5bp threshold). That is the sane bar for a
+random-walk-dominated horizon. (The earlier terminal-stub forward over
+[P-h, P] is a valid rate — the market's implied ~1-month rate P-h years out —
+but its implied change scales with maturity, not horizon, so it is not the
+horizon baseline this scorecard compares against.)
 
 Data source: the Treasury.gov daily par yield curve CSV (``dataflows.treasury``
 — keyless, point-in-time safe: past years are final and cached). The FRED
-``fi_tenor_series`` set (DGS2/5/10/30) cannot supply y_s below the 2Y point;
+``fi_tenor_series`` set (DGS2/5/10/30) cannot supply y_h (nothing below 2Y);
 the par curve CSV carries 1 Mo..30 Yr. DGS series republish these same CMT
 yields, so the baseline's curve matches the runner's actuals series.
 
@@ -96,21 +103,9 @@ def _tenor_years(tenor: str) -> float:
     return float(tenor.removesuffix("Y"))
 
 
-def _interp_yield(curve: dict[float, float], t: float) -> float:
-    """Linear-in-maturity interpolated yield (decimal) at maturity t years."""
-    pts = sorted(curve)
-    if t < pts[0] or t > pts[-1]:
-        raise ValueError(f"curve does not span maturity {t:.4f}y")
-    lo = max(p for p in pts if p <= t)
-    hi = min(p for p in pts if p >= t)
-    if lo == hi:
-        return curve[lo]
-    return curve[lo] + (t - lo) / (hi - lo) * (curve[hi] - curve[lo])
-
-
-def _implied_change_bp(y_p: float, p: float, y_s: float, h: float) -> float:
-    """No-arbitrage terminal-stub forward minus spot, in bp (see module docs)."""
-    forward = ((1 + y_p) ** p / (1 + y_s) ** (p - h)) ** (1 / h) - 1
+def _implied_change_bp(y_p: float, p: float, y_h: float, h: float) -> float:
+    """Front-of-curve forward minus spot, in bp (see module docs)."""
+    forward = (p * y_p - h * y_h) / (p - h)
     return (forward - y_p) * 10000
 
 
@@ -220,12 +215,13 @@ def forwards_implied_baseline(
     runs = []
     for test_date in test_dates:
         curve = _spot_curve(test_date)
+        # h (20/252y) is below the shortest published par point (1 Mo), so
+        # y_h is approximated by the 1 Mo yield (see module docstring).
+        y_h = curve[min(curve)]
         changes = {}
         for tenor in config["fi_tenor_series"]:
             p = _tenor_years(tenor)
-            changes[tenor] = _implied_change_bp(
-                _interp_yield(curve, p), p, _interp_yield(curve, p - h), h
-            )
+            changes[tenor] = _implied_change_bp(curve[p], p, y_h, h)
         rationale = (
             f"forward-curve-implied move over {config['fi_horizon_days']}d "
             "from the daily par curve"

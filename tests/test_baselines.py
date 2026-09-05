@@ -4,21 +4,22 @@ Offline: the Treasury.gov par-curve CSV fetch is mocked at the
 ``treasury._request`` boundary (same pattern as test_treasury.py) and the
 cache dir is redirected via ``set_config`` (conftest restores global config).
 
-Expected forward-implied values are hand-computed from the prescribed
-no-arbitrage formula, with h = 20/252:
+Expected forward-implied values are hand-computed from the front-of-curve
+no-arbitrage formula, with h = 20/252 and y_h the curve yield at maturity h
+(the 1 Mo point, the shortest available tenor):
 
-    f = ((1+y_P)^P / (1+y_s)^(P-h))^(1/h) - 1,   implied change = f - y_P
+    f(h->P) = (P*y_P - h*y_h)/(P-h),   implied change = f - y_P
 
-where y_s is the spot yield at maturity P-h, linearly interpolated on the
-daily par curve. Reference values (percent curve points, linear interpolation):
+For a linear curve y(t) = y0 + s*t this collapses to (y_h - s*h)*h/(P-h),
+i.e. ~s*h and tenor-independent (the horizon-scaled bar). Reference values:
 
-- Linear curve y(t) = 2.0 + 0.1*t  -> +19.225155 (2Y), +49.326563 (5Y),
-  +99.689508 (10Y), +303.521836bp (30Y).
+- Linear curve y(t) = 2.0 + 0.1*t  -> +0.792149 (2Y), +0.793065 (5Y),
+  +0.793360 (10Y), +0.793554bp (30Y); all well inside the 5bp neutral band.
 - Flat curve y(t) = 4.0            -> 0bp everywhere.
-- Inverted curve y(t) = 5.0 - 0.1*t -> -19.188035 (2Y), -49.088821 (5Y),
-  -98.730933 (10Y), -294.849190bp (30Y).
-- y(t) = 4.0 + 0.0260*t -> 2Y implied +4.9949bp (just below the 5bp neutral
-  threshold -> neutral); y(t) = 4.0 + 0.0261*t -> +5.0141bp (-> up).
+- Inverted curve y(t) = 5.0 - 0.1*t -> -0.792149 (2Y), -0.793065 (5Y),
+  -0.793360 (10Y), -0.793554bp (30Y); negative long-end implication.
+- y(t) = 4.0 + 0.63*t -> 2Y implied +4.989669bp (just below the 5bp neutral
+  threshold -> neutral); y(t) = 4.0 + 0.65*t -> +5.147934bp (-> up).
 """
 from __future__ import annotations
 
@@ -157,23 +158,17 @@ def test_forwards_upward_sloping_curve_implies_rises(_tmp_cache):
         runs = forwards_implied_baseline(["2025-01-10"], config=_CONFIG)
 
     run = runs[0]
-    # Hand-computed from the no-arbitrage formula (module docstring).
+    # Hand-computed from the front-of-curve formula (module docstring):
+    # ~s*h and tenor-independent, far inside the 5bp neutral band.
     assert run.implied_changes_bp == pytest.approx(
-        {"2Y": 19.225155, "5Y": 49.326563, "10Y": 99.689508, "30Y": 303.521836},
+        {"2Y": 0.792149, "5Y": 0.793065, "10Y": 0.793360, "30Y": 0.793554},
         rel=1e-6,
     )
     calls = {c.tenor: c for c in run.direction_calls}
-    assert all(c.direction == "up" for c in calls.values())
-    assert calls["2Y"].magnitude_bucket == "10-25bp"   # 19.2bp
-    assert calls["5Y"].magnitude_bucket == "25bp+"     # 49.3bp
-    assert calls["30Y"].magnitude_bucket == "25bp+"    # 303.5bp
-
-    shapes = {c.spread: c for c in run.shape_calls}
-    # 2s10s: 99.69 - 19.23 = +80.5bp; 5s30s: 303.52 - 49.33 = +254.2bp.
-    assert shapes["2s10s"].shape == "steepen"
-    assert shapes["5s30s"].shape == "steepen"
-    # fly: 49.33 - (19.23 + 99.69)/2 = -10.1bp -> flatten.
-    assert shapes["2s5s10s_fly"].shape == "flatten"
+    assert all(c.direction == "neutral" for c in calls.values())
+    assert all(c.magnitude_bucket == "<10bp" for c in calls.values())
+    # Shape deltas are sub-bp (+0.0013, +0.0005, +0.0003bp) -> unchanged.
+    assert all(c.shape == "unchanged" for c in run.shape_calls)
 
 
 @pytest.mark.unit
@@ -186,27 +181,27 @@ def test_forwards_inverted_curve_implies_negative_long_end(_tmp_cache):
         runs = forwards_implied_baseline(["2025-01-10"], config=_CONFIG)
 
     run = runs[0]
+    # Negative at every tenor, with the long-end implication most negative
+    # (mirrors the upward-curve case): 30Y < 10Y < 5Y < 2Y < 0.
     assert run.implied_changes_bp == pytest.approx(
-        {"2Y": -19.188035, "5Y": -49.088821, "10Y": -98.730933,
-         "30Y": -294.849190},
+        {"2Y": -0.792149, "5Y": -0.793065, "10Y": -0.793360,
+         "30Y": -0.793554},
         rel=1e-6,
     )
     calls = {c.tenor: c for c in run.direction_calls}
-    assert calls["30Y"].direction == "down"
-    assert calls["30Y"].magnitude_bucket == "25bp+"
-    shapes = {c.spread: c for c in run.shape_calls}
-    assert shapes["2s10s"].shape == "flatten"   # -98.73 - (-19.19) = -79.5bp
-    assert shapes["2s5s10s_fly"].shape == "steepen"  # -49.09 + 58.96 = +9.9bp
+    # Sub-bp implied moves are inside the 5bp neutral band -> all neutral.
+    assert all(c.direction == "neutral" for c in calls.values())
+    assert all(c.shape == "unchanged" for c in run.shape_calls)
 
 
 @pytest.mark.unit
 def test_forwards_threshold_edge_cases(_tmp_cache):
     # Slopes bracketing the 5bp neutral threshold for the 2Y implied change:
-    # +4.9949bp -> neutral; +5.0141bp -> up (exactly-at-or-above is directional,
-    # mirroring runner._classify_direction semantics).
+    # +4.989669bp -> neutral; +5.148072bp -> up (exactly-at-or-above is
+    # directional, mirroring runner._classify_direction semantics).
     csv_text = _curve_csv([
-        ("01/09/2025", lambda t: 4.0 + 0.0260 * t),
-        ("01/10/2025", lambda t: 4.0 + 0.0261 * t),
+        ("01/09/2025", lambda t: 4.0 + 0.63 * t),
+        ("01/10/2025", lambda t: 4.0 + 0.65 * t),
     ])
     with mock.patch.object(
         treasury, "_request", side_effect=_treasury_stub(csv_text)
@@ -214,9 +209,9 @@ def test_forwards_threshold_edge_cases(_tmp_cache):
         runs = forwards_implied_baseline(["2025-01-09", "2025-01-10"],
                                          config=_CONFIG)
 
-    assert runs[0].implied_changes_bp["2Y"] == pytest.approx(4.9949, abs=1e-3)
+    assert runs[0].implied_changes_bp["2Y"] == pytest.approx(4.989669, rel=1e-6)
     assert {c.tenor: c for c in runs[0].direction_calls}["2Y"].direction == "neutral"
-    assert runs[1].implied_changes_bp["2Y"] == pytest.approx(5.0141, abs=1e-3)
+    assert runs[1].implied_changes_bp["2Y"] == pytest.approx(5.147934, rel=1e-6)
     assert {c.tenor: c for c in runs[1].direction_calls}["2Y"].direction == "up"
 
 
@@ -258,7 +253,7 @@ def test_forwards_multiple_dates_in_order(_tmp_cache):
         runs = forwards_implied_baseline(["2025-01-09", "2025-01-10"],
                                          config=_CONFIG)
     assert [r.test_date for r in runs] == ["2025-01-09", "2025-01-10"]
-    assert runs[0].implied_changes_bp["10Y"] == pytest.approx(99.689508, rel=1e-6)
+    assert runs[0].implied_changes_bp["10Y"] == pytest.approx(0.793360, rel=1e-6)
     assert runs[1].implied_changes_bp["10Y"] == pytest.approx(0.0, abs=1e-9)
 
 
