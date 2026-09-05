@@ -10,8 +10,9 @@ no-arbitrage formula, with h = 20/252 and y_h the curve yield at maturity h
 
     f(h->P) = (P*y_P - h*y_h)/(P-h),   implied change = f - y_P
 
-For a linear curve y(t) = y0 + s*t this collapses to (y_h - s*h)*h/(P-h),
-i.e. ~s*h and tenor-independent (the horizon-scaled bar). Reference values:
+For a linear curve y(t) = y0 + s*t this collapses to h*(y_P - y_h)/(P-h) =
+s*h*(P-m)/(P-h) (m = 1/12y), i.e. ~s*h and tenor-independent (the
+horizon-scaled bar). Reference values:
 
 - Linear curve y(t) = 2.0 + 0.1*t  -> +0.792149 (2Y), +0.793065 (5Y),
   +0.793360 (10Y), +0.793554bp (30Y); all well inside the 5bp neutral band.
@@ -197,7 +198,7 @@ def test_forwards_inverted_curve_implies_negative_long_end(_tmp_cache):
 @pytest.mark.unit
 def test_forwards_threshold_edge_cases(_tmp_cache):
     # Slopes bracketing the 5bp neutral threshold for the 2Y implied change:
-    # +4.989669bp -> neutral; +5.148072bp -> up (exactly-at-or-above is
+    # +4.989669bp -> neutral; +5.147934bp -> up (exactly-at-or-above is
     # directional, mirroring runner._classify_direction semantics).
     csv_text = _curve_csv([
         ("01/09/2025", lambda t: 4.0 + 0.63 * t),

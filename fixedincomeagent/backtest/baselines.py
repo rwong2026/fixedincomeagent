@@ -14,9 +14,10 @@ Forwards math
 -------------
 For tenor with maturity P years and horizon h = ``fi_horizon_days``/252 years,
 the implied forward yield is the front-of-curve arbitrage-free forward rate
-for the P-year rate h years out (log-rate form):
+for the P-year rate h years out. The code uses the linear par-yield form
+(standard money-market approximation):
 
-    f(h->P) = (P*ln(1+y_P) - h*ln(1+y_h)) / (P-h),
+    f(h->P) = (P*y_P - h*y_h) / (P-h),
     implied change = f - y_P
 
 where y_h is the curve yield at maturity h. With h = 20/252 below the
@@ -26,11 +27,13 @@ sub-bp at these slopes. The exact continuously-compounded form is
 
     f(h->P) = (P*z(P) - h*z(h)) / (P-h),
 
-with z the zero curve; using par yields for z is the second, standard
-money-market approximation (error also sub-bp at these levels).
+with z the zero curve; using linear par yields for z is the second, standard
+money-market approximation — and the right choice here: only the linear form
+implies exactly zero change on a flat curve (the ln(1+·) form does not).
 
-Economic reading: for a linear curve y(x) = y0 + s*x the implied change
-collapses to (y_h - s*h)*h/(P-h) — ~s*h and essentially tenor-independent, so
+Economic reading: for a linear curve y(x) = y0 + s*x (so y_P - y_h =
+s*(P-m), m = 1/12y) the implied change collapses to h*(y_P - y_h)/(P-h) =
+s*h*(P-m)/(P-h) — ~s*h and essentially tenor-independent, so
 a mild +/-10bp/year slope implies only ~+/-0.8bp over 20 trading days
 ("neutral" under the default 5bp threshold). That is the sane bar for a
 random-walk-dominated horizon. (The earlier terminal-stub forward over
