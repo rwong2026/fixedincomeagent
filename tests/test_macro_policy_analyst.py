@@ -182,3 +182,29 @@ def test_prompt_directs_component_level_report_structure():
         "Overall Summary",
     ):
         assert section in prompt, f"prompt missing section cue: {section}"
+
+
+def test_preamble_carries_final_transaction_proposal_stop_signal():
+    # Shared loop-termination signal carried verbatim by all analysts; the
+    # graph stops when an assistant emits a deliverable (#review task-3.1).
+    llm = _FakeLLM()
+    create_macro_policy_analyst(llm)(_state())
+    assert "FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**" in llm.seen_prompt
+
+
+def test_tool_call_response_leaves_report_empty():
+    # Mid-loop turns (model requests tool calls) must not publish a report;
+    # the final report is captured only on the no-tool-call turn.
+    llm = _FakeLLM()
+
+    def _with_tool_calls(prompt_value):
+        llm.seen_prompt = prompt_value.to_string()
+        return AIMessage(
+            content="",
+            tool_calls=[{"name": "get_fred_series", "args": {}, "id": "call_1"}],
+        )
+
+    llm.bind_tools = lambda tools: _with_tool_calls
+    result = create_macro_policy_analyst(llm)(_state())
+    assert result["macro_policy_report"] == ""
+    assert len(result["messages"]) == 1
