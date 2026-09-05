@@ -5,6 +5,7 @@ network connection. Caching is exercised against a temp ``data_cache_dir``.
 """
 import copy
 import json
+import os
 import tempfile
 import unittest
 from datetime import date
@@ -64,6 +65,19 @@ _AUCTIONS = {
             "high_investment_rate": "5.285",
             "bid_to_cover_ratio": "2.900000",
             "offering_amt": "90000000000",
+        },
+        {
+            # FRN: no yield/investment rate — only a price and a spread. The
+            # price must NOT leak into the Rate column.
+            "auction_date": "2024-06-05",
+            "cusip": "91282CKR0",
+            "security_type": "FRN",
+            "security_term": "2-Year",
+            "high_yield": "null",
+            "high_investment_rate": "null",
+            "high_price": "99.988631",
+            "bid_to_cover_ratio": "3.140000",
+            "offering_amt": "28000000000",
         },
     ]
 }
@@ -148,6 +162,23 @@ class ParYieldFormattingTests(_TreasuryTestCase):
         self.assertIn("No", out)
         self.assertIn("window", out)
 
+    def test_malformed_csv_errors_loudly(self):
+        # A 200 with a changed body (e.g. an HTML error page) must surface a
+        # clear error naming the source — never a false "no data" report.
+        stub = _request_stub(csv_by_year={"2024": "<html>oops</html>"})
+        with mock.patch.object(treasury, "_request", side_effect=stub):
+            out = treasury.get_treasury_par_yields("2024-06-15", look_back_days=30)
+        self.assertIn("ERROR", out)
+        self.assertIn("Treasury", out)
+        self.assertNotIn("No Treasury par yield observations", out)
+
+    def test_malformed_csv_is_not_cached(self):
+        # Garbage must never be written to the cache as if it were final data.
+        stub = _request_stub(csv_by_year={"2023": "<html>oops</html>"})
+        with mock.patch.object(treasury, "_request", side_effect=stub):
+            treasury.get_treasury_par_yields("2023-12-31", look_back_days=30)
+        self.assertEqual(os.listdir(self._tmp), [])
+
 
 @pytest.mark.unit
 class ParYieldFetchingTests(_TreasuryTestCase):
@@ -207,6 +238,25 @@ class AuctionResultsTests(_TreasuryTestCase):
         with mock.patch.object(treasury, "_request", side_effect=_request_stub()):
             out = treasury.get_auction_results("2024-06-15", look_back_days=60)
         self.assertNotIn("912810TU0", out)
+
+    def test_frn_price_does_not_leak_into_rate_column(self):
+        # Regression: FRNs have no high_yield/high_investment_rate, only a
+        # price (~100) and a spread. The price must not render as a "rate".
+        with mock.patch.object(treasury, "_request", side_effect=_request_stub()):
+            out = treasury.get_auction_results("2024-06-15", look_back_days=60)
+        self.assertNotIn("99.988631", out)
+        # the FRN row itself still renders, with an empty rate cell
+        self.assertIn("| 2024-06-05 | 2-Year FRN | 91282CKR0 |  | 3.14 | 28.0 |", out)
+
+    def test_missing_data_key_errors_loudly(self):
+        # A changed API shape (no "data" key) must surface a clear error,
+        # never a false "No auction results" report.
+        stub = _request_stub(auctions={"error": "something changed"})
+        with mock.patch.object(treasury, "_request", side_effect=stub):
+            out = treasury.get_auction_results("2024-06-15", look_back_days=30)
+        self.assertIn("ERROR", out)
+        self.assertIn("auctions_query", out)
+        self.assertNotIn("No auction results", out)
 
     def test_date_window_params(self):
         captured = []

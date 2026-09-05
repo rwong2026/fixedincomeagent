@@ -83,11 +83,17 @@ def _yield_csv_cache_path(year: int) -> str:
     return os.path.join(cache_dir, f"treasury_par_yield_curve_{year}.csv")
 
 
+class TreasuryFormatError(ValueError):
+    """A Treasury source returned 200 with an unexpected body shape."""
+
+
 def _load_yield_csv(year: int) -> str:
     """Return the par yield curve CSV for a calendar year.
 
     Past years are immutable and cached on disk; the current year still
-    updates every business day, so it is always fetched fresh.
+    updates every business day, so it is always fetched fresh. The body is
+    validated before it is cached or parsed: the feed is unversioned, so a
+    format change must fail loudly rather than be cached as final data.
     """
     path = _yield_csv_cache_path(year)
     if year < date.today().year and os.path.exists(path):
@@ -101,6 +107,13 @@ def _load_yield_csv(year: int) -> str:
             "_format": "csv",
         },
     )
+    header = text.split("\n", 1)[0].split(",")
+    if header[0].strip() != "Date" or len(header) < 2:
+        raise TreasuryFormatError(
+            f"Treasury par yield CSV for {year} has an unexpected format: "
+            f"expected a header of 'Date,<tenor>...', got {header[0].strip()!r}. "
+            "The home.treasury.gov feed format may have changed."
+        )
     if year < date.today().year:
         with open(path, "w", encoding="utf-8") as f:
             f.write(text)
@@ -108,12 +121,12 @@ def _load_yield_csv(year: int) -> str:
 
 
 def _parse_yield_csv(text: str) -> tuple[list[str], list[tuple[date, dict]]]:
-    """Parse a yield CSV into (tenor order, [(date, {tenor: yield})])."""
+    """Parse a yield CSV into (tenor order, [(date, {tenor: yield})]).
+
+    Assumes a header already validated by ``_load_yield_csv``.
+    """
     reader = csv.reader(io.StringIO(text))
-    try:
-        header = next(reader)
-    except StopIteration:
-        return [], []
+    header = next(reader)
     tenors = header[1:]
     rows = []
     for line in reader:
@@ -133,7 +146,9 @@ def _parse_yield_csv(text: str) -> tuple[list[str], list[tuple[date, dict]]]:
     return tenors, rows
 
 
-def get_treasury_par_yields(curr_date: str, look_back_days: int = 90) -> str:
+def get_treasury_par_yields(
+    curr_date: str, look_back_days: int = DEFAULT_LOOKBACK_DAYS
+) -> str:
     """Fetch the daily Treasury par yield curve as a markdown report.
 
     Args:
@@ -150,10 +165,13 @@ def get_treasury_par_yields(curr_date: str, look_back_days: int = 90) -> str:
 
     tenors: list[str] = []
     rows: list[tuple[date, dict]] = []
-    for year in range(start_dt.year, end_dt.year + 1):
-        year_tenors, year_rows = _parse_yield_csv(_load_yield_csv(year))
-        tenors.extend(t for t in year_tenors if t not in tenors)
-        rows.extend(year_rows)
+    try:
+        for year in range(start_dt.year, end_dt.year + 1):
+            year_tenors, year_rows = _parse_yield_csv(_load_yield_csv(year))
+            tenors.extend(t for t in year_tenors if t not in tenors)
+            rows.extend(year_rows)
+    except TreasuryFormatError as e:
+        return f"ERROR: {e}"
     window = sorted(dv for dv in rows if start_dt <= dv[0] <= end_dt)
 
     header = (
@@ -216,7 +234,9 @@ def _is_priced(auction: dict) -> bool:
     )
 
 
-def get_auction_results(curr_date: str, look_back_days: int = 90) -> str:
+def get_auction_results(
+    curr_date: str, look_back_days: int = DEFAULT_LOOKBACK_DAYS
+) -> str:
     """Fetch recent Treasury auction results as a markdown report.
 
     Args:
@@ -244,7 +264,15 @@ def get_auction_results(curr_date: str, look_back_days: int = 90) -> str:
             },
         )
     )
-    rows = [r for r in payload.get("data", []) if _is_priced(r)]
+    # The API is unversioned in practice: a shape change must fail loudly
+    # rather than degrade into a false "no results" report.
+    if not isinstance(payload, dict) or "data" not in payload:
+        return (
+            f"ERROR: Treasury Fiscal Data API ({AUCTIONS_ENDPOINT}) returned "
+            f"an unexpected response: expected a JSON object with a 'data' "
+            f"key, got {str(payload)[:200]!r}. The API shape may have changed."
+        )
+    rows = [r for r in payload["data"] if _is_priced(r)]
 
     header = (
         "## Treasury Auction Results\n"
