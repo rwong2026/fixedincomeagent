@@ -44,6 +44,33 @@ class RiskDebateState(TypedDict):
     count: Annotated[int, "Length of the current conversation"]  # Conversation length
 
 
+# --- Fixed-Income Curve Debate States ---
+
+
+class DirectionDebateState(TypedDict):
+    """State for the yield-direction debate (higher vs lower yields)."""
+    higher_yields_history: Annotated[str, "Arguments for higher yields"]
+    lower_yields_history: Annotated[str, "Arguments for lower yields"]
+    history: Annotated[str, "Full debate conversation history"]
+    current_response: Annotated[str, "Latest response in the debate"]
+    judge_decision: Annotated[str, "Direction debate judge's decision"]
+    count: Annotated[int, "Number of debate turns taken"]
+
+
+class ShapeDebateState(TypedDict):
+    """State for the curve-shape debate (steepener vs flattener).
+
+    Runs second, conditioned on the direction debate's outcome.
+    """
+    steepener_history: Annotated[str, "Arguments for curve steepening"]
+    flattener_history: Annotated[str, "Arguments for curve flattening"]
+    history: Annotated[str, "Full debate conversation history"]
+    current_response: Annotated[str, "Latest response in the debate"]
+    direction_outcome: Annotated[str, "Outcome from the direction debate (context)"]
+    judge_decision: Annotated[str, "Shape debate judge's decision"]
+    count: Annotated[int, "Number of debate turns taken"]
+
+
 class AgentState(MessagesState):
     company_of_interest: Annotated[str, "Company that we are interested in trading"]
     asset_type: Annotated[str, "Asset type under analysis such as stock or crypto"]
@@ -74,3 +101,18 @@ class AgentState(MessagesState):
     ]
     final_trade_decision: Annotated[str, "Final decision made by the Risk Analysts"]
     past_context: Annotated[str, "Memory log context injected at run start (same-ticker decisions + cross-ticker lessons)"]
+
+    # Fixed-income analyst reports (replacing equity reports)
+    macro_policy_report: Annotated[str, "Report from the Macro/Policy Analyst"]
+    curve_technicals_report: Annotated[str, "Report from the Curve Technicals Analyst"]
+    fed_speak_report: Annotated[str, "Report from the Fed Speak Analyst"]
+    macro_calendar_report: Annotated[str, "Report from the Macro Calendar Analyst"]
+
+    # Fixed-income debate states
+    direction_debate_state: Annotated[
+        DirectionDebateState, "State of the yield-direction debate"
+    ]
+    shape_debate_state: Annotated[
+        ShapeDebateState, "State of the curve-shape debate"
+    ]
+
