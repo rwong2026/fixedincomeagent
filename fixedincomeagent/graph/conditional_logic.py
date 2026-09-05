@@ -6,10 +6,18 @@ from fixedincomeagent.agents.utils.agent_states import AgentState
 class ConditionalLogic:
     """Handles conditional logic for determining graph flow."""
 
-    def __init__(self, max_debate_rounds=1, max_risk_discuss_rounds=1):
+    def __init__(
+        self,
+        max_debate_rounds=1,
+        max_risk_discuss_rounds=1,
+        max_direction_debate_rounds=1,
+        max_shape_debate_rounds=1,
+    ):
         """Initialize with configuration parameters."""
         self.max_debate_rounds = max_debate_rounds
         self.max_risk_discuss_rounds = max_risk_discuss_rounds
+        self.max_direction_debate_rounds = max_direction_debate_rounds
+        self.max_shape_debate_rounds = max_shape_debate_rounds
 
     def should_continue_market(self, state: AgentState):
         """Determine if market analysis should continue."""
@@ -82,6 +90,31 @@ class ConditionalLogic:
         if state["investment_debate_state"]["current_response"].startswith("Bull"):
             return "Bear Researcher"
         return "Bull Researcher"
+
+    def should_continue_direction_debate(self, state: AgentState) -> str:
+        """Route the higher/lower yields debate; hand to the Direction
+        Research Manager once the round limit is reached."""
+        if (
+            state["direction_debate_state"]["count"]
+            >= 2 * self.max_direction_debate_rounds
+        ):  # rounds of back-and-forth between 2 agents
+            return "Direction Research Manager"
+        if state["direction_debate_state"]["current_response"].startswith(
+            "Higher Yields"
+        ):
+            return "Lower Yields Researcher"
+        return "Higher Yields Researcher"
+
+    def should_continue_shape_debate(self, state: AgentState) -> str:
+        """Route the steepener/flattener debate; hand to the Shape
+        Research Manager once the round limit is reached."""
+        if (
+            state["shape_debate_state"]["count"] >= 2 * self.max_shape_debate_rounds
+        ):  # rounds of back-and-forth between 2 agents
+            return "Shape Research Manager"
+        if state["shape_debate_state"]["current_response"].startswith("Steepener"):
+            return "Flattener Researcher"
+        return "Steepener Researcher"
 
     def should_continue_risk_analysis(self, state: AgentState) -> str:
         """Determine if risk analysis should continue."""
