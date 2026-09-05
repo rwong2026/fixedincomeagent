@@ -15,6 +15,11 @@ against the official calendars on 2026-09-05:
 **Update annually**: extend the list each January when the Fed posts the next
 year's calendar (currently published through 2027).
 
+The plan's suggestion to supplement with FRED ``DFEDTARU`` for target-rate
+decisions is deliberately skipped: rate decisions come from the fred.py
+vendor when needed, and dropping the FRED call keeps this module
+offline-deterministic (no API key, no network).
+
 Two adjustments to the raw calendar, both visible on the 2020 page: the
 March 17-18, 2020 meeting was CANCELLED and is excluded, and the two
 unscheduled March 2020 emergency meetings (Mar 3 and Mar 15 decisions) are

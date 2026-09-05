@@ -247,6 +247,19 @@ class FedSpeechesTests(_FomcTestCase):
         self.assertIn("unavailable", out.lower())
         self.assertIn("manual", out.lower())
 
+    def test_malformed_pubdate_falls_back_to_manual_note(self):
+        # Regression: an unparseable pubDate raised a bare ValueError out of
+        # get_fed_speeches, killing the report run. A pubDate format change is
+        # a shape change and must hit the loud fallback instead.
+        bad = _RSS.replace(
+            "Thu, 3 Sep 2026 12:30:00 GMT", "not-a-date"
+        )
+        with mock.patch.object(fed_speeches, "_request", return_value=bad):
+            out = fed_speeches.get_fed_speeches("2026-09-05")
+        self.assertIn("unavailable", out.lower())
+        self.assertIn("manual", out.lower())
+        self.assertIn("pubDate", out)
+
     def test_table_structure(self):
         with mock.patch.object(fed_speeches, "_request", return_value=_RSS):
             out = fed_speeches.get_fed_speeches("2026-09-05")

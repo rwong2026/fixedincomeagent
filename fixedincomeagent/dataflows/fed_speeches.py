@@ -62,13 +62,17 @@ def _parse_items(xml_text: str) -> list[dict]:
         speaker, _, talk = title.partition(", ")
         # description is the venue line, e.g. "Speech At the Exchequer Club".
         summary = (item.findtext("description") or "").strip()
+        try:
+            day = parsedate_to_datetime(pub).date()
+        except ValueError as e:
+            raise _FeedShapeError(f"unparseable pubDate {pub!r}: {e}") from e
         items.append(
             {
                 "speaker": speaker if talk else "",
                 "title": talk or title,
                 "link": link,
                 "summary": summary,
-                "date": parsedate_to_datetime(pub).date(),
+                "date": day,
             }
         )
     return items
