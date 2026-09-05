@@ -14,17 +14,31 @@ from langgraph.prebuilt import ToolNode
 # Import the abstract tool methods from agent_utils
 from fixedincomeagent.agents.utils.agent_utils import (
     build_instrument_context,
+    get_alfred_vintage,
+    get_auction_results,
     get_balance_sheet,
     get_cashflow,
+    get_consumer_inflation_expectations,
+    get_cot_data,
+    get_fed_speeches,
+    get_fomc_calendar,
+    get_fred_series,
     get_fundamentals,
     get_global_news,
     get_income_statement,
     get_indicators,
+    get_inflation_breakevens,
+    get_inflation_nowcast,
     get_insider_transactions,
+    get_ism_prices_paid,
     get_macro_indicators,
     get_news,
     get_prediction_markets,
+    get_shelter_rents,
     get_stock_data,
+    get_supply_chain_pressure,
+    get_treasury_par_yields,
+    get_used_vehicle_index,
     get_verified_market_snapshot,
     resolve_instrument_identity,
 )
@@ -245,6 +259,45 @@ class TradingAgentsGraph:
                     get_balance_sheet,
                     get_cashflow,
                     get_income_statement,
+                ]
+            ),
+            # Fixed-income executors — each registers exactly the tool set its
+            # analyst binds via llm.bind_tools, so model calls never hit a
+            # missing tool (same gap class as the market snapshot regression
+            # guarded by tests/test_market_toolnode.py).
+            "macro_policy": ToolNode(
+                [
+                    get_fred_series,
+                    get_alfred_vintage,
+                    get_inflation_breakevens,
+                    get_inflation_nowcast,
+                    get_shelter_rents,
+                    get_used_vehicle_index,
+                    get_supply_chain_pressure,
+                    get_ism_prices_paid,
+                    get_consumer_inflation_expectations,
+                    get_fomc_calendar,
+                    get_fed_speeches,
+                ]
+            ),
+            "curve_technicals": ToolNode(
+                [
+                    get_fred_series,
+                    get_treasury_par_yields,
+                ]
+            ),
+            "fed_speak": ToolNode(
+                [
+                    get_fed_speeches,
+                    get_fomc_calendar,
+                    get_cot_data,
+                ]
+            ),
+            "macro_calendar": ToolNode(
+                [
+                    get_fomc_calendar,
+                    get_fred_series,
+                    get_auction_results,
                 ]
             ),
         }

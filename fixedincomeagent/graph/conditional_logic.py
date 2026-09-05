@@ -49,6 +49,29 @@ class ConditionalLogic:
             return "tools_fundamentals"
         return "Msg Clear Fundamentals"
 
+    def _should_continue_analyst(self, state: AgentState, tool_node: str, clear_node: str):
+        """Shared analyst loop: route to the tool node while the model is
+        calling tools, else to the clear node to advance the sequence."""
+        if state["messages"][-1].tool_calls:
+            return tool_node
+        return clear_node
+
+    def should_continue_macro_policy(self, state: AgentState):
+        """Determine if macro-policy analysis should continue."""
+        return self._should_continue_analyst(state, "tools_macro_policy", "Msg Clear Macro Policy")
+
+    def should_continue_curve_technicals(self, state: AgentState):
+        """Determine if curve-technicals analysis should continue."""
+        return self._should_continue_analyst(state, "tools_curve_technicals", "Msg Clear Curve Technicals")
+
+    def should_continue_fed_speak(self, state: AgentState):
+        """Determine if fed-speak analysis should continue."""
+        return self._should_continue_analyst(state, "tools_fed_speak", "Msg Clear Fed Speak")
+
+    def should_continue_macro_calendar(self, state: AgentState):
+        """Determine if macro-calendar analysis should continue."""
+        return self._should_continue_analyst(state, "tools_macro_calendar", "Msg Clear Macro Calendar")
+
     def should_continue_debate(self, state: AgentState) -> str:
         """Determine if debate should continue."""
 

@@ -50,6 +50,34 @@ ANALYST_NODE_SPECS: dict[str, AnalystNodeSpec] = {
         tool_node="tools_fundamentals",
         report_key="fundamentals_report",
     ),
+    "macro_policy": AnalystNodeSpec(
+        key="macro_policy",
+        agent_node="Macro Policy Analyst",
+        clear_node="Msg Clear Macro Policy",
+        tool_node="tools_macro_policy",
+        report_key="macro_policy_report",
+    ),
+    "curve_technicals": AnalystNodeSpec(
+        key="curve_technicals",
+        agent_node="Curve Technicals Analyst",
+        clear_node="Msg Clear Curve Technicals",
+        tool_node="tools_curve_technicals",
+        report_key="curve_technicals_report",
+    ),
+    "fed_speak": AnalystNodeSpec(
+        key="fed_speak",
+        agent_node="Fed Speak Analyst",
+        clear_node="Msg Clear Fed Speak",
+        tool_node="tools_fed_speak",
+        report_key="fed_speak_report",
+    ),
+    "macro_calendar": AnalystNodeSpec(
+        key="macro_calendar",
+        agent_node="Macro Calendar Analyst",
+        clear_node="Msg Clear Macro Calendar",
+        tool_node="tools_macro_calendar",
+        report_key="macro_calendar_report",
+    ),
 }
 
 

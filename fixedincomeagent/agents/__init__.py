@@ -1,4 +1,8 @@
+from .analysts.curve_technicals_analyst import create_curve_technicals_analyst
+from .analysts.fed_speak_analyst import create_fed_speak_analyst
 from .analysts.fundamentals_analyst import create_fundamentals_analyst
+from .analysts.macro_calendar_analyst import create_macro_calendar_analyst
+from .analysts.macro_policy_analyst import create_macro_policy_analyst
 from .analysts.market_analyst import create_market_analyst
 from .analysts.news_analyst import create_news_analyst
 from .analysts.sentiment_analyst import (
@@ -24,7 +28,11 @@ __all__ = [
     "create_bear_researcher",
     "create_bull_researcher",
     "create_research_manager",
+    "create_curve_technicals_analyst",
+    "create_fed_speak_analyst",
     "create_fundamentals_analyst",
+    "create_macro_calendar_analyst",
+    "create_macro_policy_analyst",
     "create_market_analyst",
     "create_neutral_debator",
     "create_news_analyst",

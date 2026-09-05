@@ -10,7 +10,11 @@ from fixedincomeagent.agents import (
     create_bear_researcher,
     create_bull_researcher,
     create_conservative_debator,
+    create_curve_technicals_analyst,
+    create_fed_speak_analyst,
     create_fundamentals_analyst,
+    create_macro_calendar_analyst,
+    create_macro_policy_analyst,
     create_market_analyst,
     create_msg_delete,
     create_neutral_debator,
@@ -64,11 +68,16 @@ class GraphSetup:
         """Set up and compile the agent workflow graph.
 
         Args:
-            selected_analysts (list): List of analyst types to include. Options are:
+            selected_analysts (list): List of analyst types to include. Equity options:
                 - "market": Market analyst
                 - "social": Social media analyst
                 - "news": News analyst
                 - "fundamentals": Fundamentals analyst
+            Fixed-income options (opt-in, not part of any default):
+                - "macro_policy": Macro/policy analyst
+                - "curve_technicals": Curve technicals analyst
+                - "fed_speak": Fed speak analyst
+                - "macro_calendar": Macro calendar analyst
         """
         plan = build_analyst_execution_plan(selected_analysts)
 
@@ -77,6 +86,10 @@ class GraphSetup:
             "social": lambda: create_sentiment_analyst(self.quick_thinking_llm),
             "news": lambda: create_news_analyst(self.quick_thinking_llm),
             "fundamentals": lambda: create_fundamentals_analyst(self.quick_thinking_llm),
+            "macro_policy": lambda: create_macro_policy_analyst(self.quick_thinking_llm),
+            "curve_technicals": lambda: create_curve_technicals_analyst(self.quick_thinking_llm),
+            "fed_speak": lambda: create_fed_speak_analyst(self.quick_thinking_llm),
+            "macro_calendar": lambda: create_macro_calendar_analyst(self.quick_thinking_llm),
         }
 
         # Create researcher and manager nodes
