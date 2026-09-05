@@ -1,5 +1,6 @@
 import logging
 
+from .alfred import get_alfred_vintage
 from .alpha_vantage import (
     get_balance_sheet as get_alpha_vantage_balance_sheet,
     get_cashflow as get_alpha_vantage_cashflow,
@@ -12,14 +13,13 @@ from .alpha_vantage import (
     get_stock as get_alpha_vantage_stock,
 )
 from .config import get_config
+from .consumer_inflation_expectations import get_consumer_inflation_expectations
+from .cot_data import get_cot_data
 from .errors import (
     NoMarketDataError,
     VendorNotConfiguredError,
     VendorRateLimitError,
 )
-from .alfred import get_alfred_vintage
-from .consumer_inflation_expectations import get_consumer_inflation_expectations
-from .cot_data import get_cot_data
 from .fed_speeches import get_fed_speeches
 from .fomc_calendar import get_fomc_calendar
 from .fred import get_macro_data as get_fred_macro_data

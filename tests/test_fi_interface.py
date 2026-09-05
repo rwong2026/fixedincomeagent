@@ -13,7 +13,6 @@ import pytest
 
 import fixedincomeagent.dataflows.config as config_module
 import fixedincomeagent.default_config as default_config
-from fixedincomeagent.dataflows import interface
 from fixedincomeagent.agents.utils.agent_utils import (
     get_alfred_vintage,
     get_auction_results,
@@ -30,6 +29,7 @@ from fixedincomeagent.agents.utils.agent_utils import (
     get_treasury_par_yields,
     get_used_vehicle_index,
 )
+from fixedincomeagent.dataflows import interface
 
 ALL_TOOLS = [
     get_inflation_breakevens,
@@ -74,7 +74,7 @@ def _reset_config():
     config_module._config = copy.deepcopy(default_config.DEFAULT_CONFIG)
 
 
-def test_tools_are_callable():
+def test_tools_are_invocable():
     """All new FI data tools should be importable and invocable.
 
     LangChain StructuredTools are not Python-callable (``callable()`` is
