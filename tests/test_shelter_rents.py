@@ -166,7 +166,7 @@ class ShelterReportTests(_ShelterTestCase):
     def test_no_observations_before_series_start(self):
         with mock.patch.object(shelter_rents, "_request", side_effect=_stub()):
             out = shelter_rents.get_shelter_rents("2020-01-01")
-        self.assertIn("No", out)
+        self.assertIn("No rent observations", out)
         self.assertIn("2020-01-01", out)
 
 
@@ -222,6 +222,10 @@ class ZillowFormatErrorTests(_ShelterTestCase):
             out = shelter_rents.get_shelter_rents("2026-09-05")
         self.assertIn("ERROR", out)
         self.assertIn("Zillow", out)
+        # The diagnostic must echo the received body, not a literal
+        # "{str(rows[0][:5])[:120]!r}" placeholder.
+        self.assertIn("nginx error page", out)
+        self.assertNotIn("{str(rows[0]", out)
 
     def test_missing_united_states_row_errors_loudly(self):
         cols = [

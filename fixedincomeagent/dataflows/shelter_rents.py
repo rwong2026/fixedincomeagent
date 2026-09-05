@@ -119,7 +119,7 @@ def _parse_zillow(text: str) -> list[tuple[date, float]]:
         raise ZillowFormatError(
             f"Zillow ZORI download ({ZILLOW_CSV_URL}) has an unexpected "
             f"header: expected 'RegionID,SizeRank,RegionName,RegionType,"
-            "<YYYY-MM-DD>...', got {str(rows[0][:5])[:120]!r}. The file "
+            f"<YYYY-MM-DD>...', got {str(rows[0][:5])[:120]!r}. The file "
             "format may have changed."
         )
     header = rows[0]
