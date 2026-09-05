@@ -17,8 +17,20 @@ from .errors import (
     VendorNotConfiguredError,
     VendorRateLimitError,
 )
+from .alfred import get_alfred_vintage
+from .consumer_inflation_expectations import get_consumer_inflation_expectations
+from .cot_data import get_cot_data
+from .fed_speeches import get_fed_speeches
+from .fomc_calendar import get_fomc_calendar
 from .fred import get_macro_data as get_fred_macro_data
+from .inflation_breakevens import get_inflation_breakevens
+from .inflation_nowcast import get_inflation_nowcast
+from .ism_prices_paid import get_ism_prices_paid
 from .polymarket import get_prediction_markets as get_polymarket_prediction_markets
+from .shelter_rents import get_shelter_rents
+from .supply_chain_pressure import get_supply_chain_pressure
+from .treasury import get_auction_results, get_treasury_par_yields
+from .used_vehicle_index import get_used_vehicle_index
 from .y_finance import (
     get_balance_sheet as get_yfinance_balance_sheet,
     get_cashflow as get_yfinance_cashflow,
@@ -74,7 +86,36 @@ TOOLS_CATEGORIES = {
         "tools": [
             "get_prediction_markets",
         ]
-    }
+    },
+    "rates_data": {
+        "description": "US Treasury rates, curve, auctions, and Fed policy data",
+        "tools": [
+            "get_treasury_par_yields",
+            "get_auction_results",
+            "get_fomc_calendar",
+            "get_fed_speeches",
+            "get_fred_series",
+            "get_alfred_vintage",
+        ]
+    },
+    "inflation_data": {
+        "description": "Inflation indicators: breakevens, nowcasts, and leading components",
+        "tools": [
+            "get_inflation_breakevens",
+            "get_inflation_nowcast",
+            "get_shelter_rents",
+            "get_used_vehicle_index",
+            "get_ism_prices_paid",
+            "get_supply_chain_pressure",
+            "get_consumer_inflation_expectations",
+        ]
+    },
+    "positioning_data": {
+        "description": "Futures positioning and sentiment data",
+        "tools": [
+            "get_cot_data",
+        ]
+    },
 }
 
 VENDOR_LIST = [
@@ -82,6 +123,14 @@ VENDOR_LIST = [
     "fred",
     "polymarket",
     "alpha_vantage",
+    "treasury",
+    "federalreserve",
+    "cleveland_fed",
+    "zillow",
+    "manheim",
+    "ism",
+    "ny_fed",
+    "cftc",
 ]
 
 # Optional enrichment categories. These add macro/event context to the news
@@ -140,6 +189,51 @@ VENDOR_METHODS = {
     # prediction_markets
     "get_prediction_markets": {
         "polymarket": get_polymarket_prediction_markets,
+    },
+    # rates_data
+    "get_treasury_par_yields": {
+        "treasury": get_treasury_par_yields,
+    },
+    "get_auction_results": {
+        "treasury": get_auction_results,
+    },
+    "get_fomc_calendar": {
+        "federalreserve": get_fomc_calendar,
+    },
+    "get_fed_speeches": {
+        "federalreserve": get_fed_speeches,
+    },
+    "get_fred_series": {
+        "fred": get_fred_macro_data,
+    },
+    "get_alfred_vintage": {
+        "fred": get_alfred_vintage,
+    },
+    # inflation_data
+    "get_inflation_breakevens": {
+        "fred": get_inflation_breakevens,
+    },
+    "get_inflation_nowcast": {
+        "cleveland_fed": get_inflation_nowcast,
+    },
+    "get_shelter_rents": {
+        "zillow": get_shelter_rents,
+    },
+    "get_used_vehicle_index": {
+        "manheim": get_used_vehicle_index,
+    },
+    "get_ism_prices_paid": {
+        "ism": get_ism_prices_paid,
+    },
+    "get_supply_chain_pressure": {
+        "ny_fed": get_supply_chain_pressure,
+    },
+    "get_consumer_inflation_expectations": {
+        "ny_fed": get_consumer_inflation_expectations,
+    },
+    # positioning_data
+    "get_cot_data": {
+        "cftc": get_cot_data,
     },
 }
 

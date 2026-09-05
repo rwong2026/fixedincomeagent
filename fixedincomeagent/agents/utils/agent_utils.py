@@ -8,6 +8,22 @@ from langchain_core.messages import HumanMessage, RemoveMessage
 
 # Import tools from separate utility files
 from fixedincomeagent.agents.utils.core_stock_tools import get_stock_data
+from fixedincomeagent.agents.utils.fi_data_tools import (
+    get_alfred_vintage,
+    get_auction_results,
+    get_consumer_inflation_expectations,
+    get_cot_data,
+    get_fed_speeches,
+    get_fomc_calendar,
+    get_fred_series,
+    get_inflation_breakevens,
+    get_inflation_nowcast,
+    get_ism_prices_paid,
+    get_shelter_rents,
+    get_supply_chain_pressure,
+    get_treasury_par_yields,
+    get_used_vehicle_index,
+)
 from fixedincomeagent.agents.utils.fundamental_data_tools import (
     get_balance_sheet,
     get_cashflow,
@@ -39,6 +55,20 @@ __all__ = [
     "get_macro_indicators",
     "get_prediction_markets",
     "get_verified_market_snapshot",
+    "get_treasury_par_yields",
+    "get_auction_results",
+    "get_fomc_calendar",
+    "get_fed_speeches",
+    "get_fred_series",
+    "get_alfred_vintage",
+    "get_inflation_breakevens",
+    "get_inflation_nowcast",
+    "get_shelter_rents",
+    "get_used_vehicle_index",
+    "get_ism_prices_paid",
+    "get_supply_chain_pressure",
+    "get_consumer_inflation_expectations",
+    "get_cot_data",
     "build_instrument_context",
     "resolve_instrument_identity",
     "get_instrument_context_from_state",

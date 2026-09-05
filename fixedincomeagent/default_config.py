@@ -148,6 +148,9 @@ DEFAULT_CONFIG = _apply_env_overrides({
         "news_data": "yfinance",             # Options: alpha_vantage, yfinance
         "macro_data": "fred",                # Options: fred (needs FRED_API_KEY)
         "prediction_markets": "polymarket",  # Options: polymarket (keyless)
+        "rates_data": "default",             # Options: treasury, federalreserve, fred
+        "inflation_data": "default",         # Options: fred, cleveland_fed, zillow, manheim, ism, ny_fed
+        "positioning_data": "default",       # Options: cftc
     },
     # Tool-level configuration (takes precedence over category-level)
     "tool_vendors": {
