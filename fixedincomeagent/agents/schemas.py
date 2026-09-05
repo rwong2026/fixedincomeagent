@@ -344,3 +344,68 @@ def render_sentiment_report(report: SentimentReport) -> str:
         "",
         report.narrative,
     ])
+
+
+# ---------------------------------------------------------------------------
+# Fixed-Income: Direction and Shape Calls
+# ---------------------------------------------------------------------------
+
+class DirectionCall(BaseModel):
+    """Structured yield-direction prediction for a single tenor."""
+
+    tenor: Literal["2Y", "5Y", "10Y", "30Y"] = Field(
+        description="Treasury tenor being predicted.",
+    )
+    direction: Literal["up", "down", "neutral"] = Field(
+        description=(
+            "Expected yield direction over the prediction horizon. "
+            "'neutral' when the expected move is below the configured "
+            "neutral threshold (default <5bp)."
+        ),
+    )
+    magnitude_bucket: Literal["<10bp", "10-25bp", "25bp+"] = Field(
+        description="Expected magnitude of the yield move.",
+    )
+    confidence: float = Field(
+        ge=0.0, le=1.0,
+        description="Confidence in this call, 0.0 to 1.0.",
+    )
+    rationale: str = Field(
+        description="Evidence-based explanation for this call.",
+    )
+
+
+def render_direction_call(call: DirectionCall) -> str:
+    """Render a DirectionCall to markdown."""
+    return (
+        f"**{call.tenor}**: {call.direction} ({call.magnitude_bucket}) "
+        f"[confidence: {call.confidence:.0%}]\n"
+        f"Rationale: {call.rationale}"
+    )
+
+
+class ShapeCall(BaseModel):
+    """Structured curve-shape prediction for a single spread."""
+
+    spread: Literal["2s10s", "5s30s", "2s5s10s_fly"] = Field(
+        description="Curve spread or butterfly being predicted.",
+    )
+    shape: Literal["steepen", "flatten", "unchanged"] = Field(
+        description="Expected shape move over the prediction horizon.",
+    )
+    confidence: float = Field(
+        ge=0.0, le=1.0,
+        description="Confidence in this call, 0.0 to 1.0.",
+    )
+    rationale: str = Field(
+        description="Evidence-based explanation for this call.",
+    )
+
+
+def render_shape_call(call: ShapeCall) -> str:
+    """Render a ShapeCall to markdown."""
+    return (
+        f"**{call.spread}**: {call.shape} "
+        f"[confidence: {call.confidence:.0%}]\n"
+        f"Rationale: {call.rationale}"
+    )
