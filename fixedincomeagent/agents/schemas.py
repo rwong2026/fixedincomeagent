@@ -409,3 +409,68 @@ def render_shape_call(call: ShapeCall) -> str:
         f"[confidence: {call.confidence:.0%}]\n"
         f"Rationale: {call.rationale}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Fixed-Income: Macro/Policy Report
+# ---------------------------------------------------------------------------
+
+class InflationComponentTrajectory(BaseModel):
+    """Trajectory assessment for a single inflation component."""
+    direction: Literal["accelerating", "decelerating", "stable"] = Field(
+        description="Direction of this component's trend."
+    )
+    confidence: Literal["low", "medium", "high"] = Field(
+        description="Confidence based on data quality and recency."
+    )
+    supporting_data: str = Field(
+        description="Specific data points supporting this assessment."
+    )
+
+class MarketImpliedExpectations(BaseModel):
+    """Market-based inflation expectations from TIPS breakevens."""
+    breakeven_5y: str = Field(description="5Y breakeven rate and recent trend")
+    breakeven_10y: str = Field(description="10Y breakeven rate and recent trend")
+    forward_5y5y: str = Field(description="5Y5Y forward breakeven rate and recent trend")
+    risk_premium_caveat: str = Field(
+        default=(
+            "Breakevens reflect market-implied expectations but also carry "
+            "liquidity and inflation-risk premia — they are not a pure "
+            "expectations reading."
+        ),
+        description="Mandatory caveat about breakeven interpretation."
+    )
+
+class SurveyExpectations(BaseModel):
+    """Survey-based inflation expectations."""
+    sce_1yr: str = Field(description="NY Fed SCE 1-year median expectation")
+    sce_3yr: str = Field(description="NY Fed SCE 3-year median expectation")
+    sce_5yr: str | None = Field(default=None, description="NY Fed SCE 5-year (if available)")
+
+class MacroPolicyReport(BaseModel):
+    """Component-level inflation and macro analysis.
+
+    CRITICAL: Do NOT average these signals into a single inflation call.
+    Each component can diverge in ways that matter for the curve.
+    """
+    shelter_trajectory: InflationComponentTrajectory
+    energy_supply_chain_trajectory: InflationComponentTrajectory
+    services_wage_trajectory: InflationComponentTrajectory
+    market_implied_expectations: MarketImpliedExpectations
+    survey_expectations: SurveyExpectations
+    divergence_flag: str = Field(
+        description=(
+            "Explicit callout when inflation components disagree. "
+            "This is the analytically interesting case — do not average it away."
+        )
+    )
+    fed_policy_assessment: str = Field(
+        description="Assessment of current Fed stance and likely policy path."
+    )
+    overall_summary: str = Field(
+        description=(
+            "Synthesis written LAST — not a replacement for component-level "
+            "detail. Identify which components are diverging and explain "
+            "the mechanism."
+        )
+    )
