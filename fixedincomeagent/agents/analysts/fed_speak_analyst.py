@@ -8,7 +8,7 @@ from fixedincomeagent.agents.utils.agent_utils import (
 )
 
 
-def create_fed_speak_analyst(llm):
+def create_fed_speak_analyst(llm, disabled_tools=None):
     def fed_speak_analyst_node(state):
         current_date = state["trade_date"]
 
@@ -17,6 +17,8 @@ def create_fed_speak_analyst(llm):
             get_fomc_calendar,
             get_cot_data,
         ]
+        if disabled_tools:
+            tools = [t for t in tools if t.name not in disabled_tools]
 
         system_message = (
             "You are a Fed-communication analyst. Your job is to read Federal "

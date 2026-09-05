@@ -37,6 +37,42 @@ _BASELINE_LOOKBACK_DAYS = 14
 
 
 @dataclass
+class AblationConfig:
+    """Config for ablation testing."""
+
+    disable_inflation_components: bool = False  # skip shelter/vehicles/supply chain
+    disable_positioning: bool = False  # skip COT data
+    disable_fed_speak: bool = False  # skip speech analysis
+    label: str = "full"  # human-readable ablation label
+
+
+# Inflation-component detail tools dropped by disable_inflation_components.
+_INFLATION_COMPONENT_TOOLS = frozenset({
+    "get_shelter_rents",
+    "get_used_vehicle_index",
+    "get_supply_chain_pressure",
+    "get_ism_prices_paid",
+    "get_inflation_nowcast",
+    "get_consumer_inflation_expectations",
+})
+
+
+def ablation_disabled_tools(config: AblationConfig | None) -> frozenset[str]:
+    """Map ablation flags to the tool names to drop. Ablation removes DATA,
+    not agents — every analyst still runs, with fewer tools bound."""
+    if config is None:
+        return frozenset()
+    names = set()
+    if config.disable_inflation_components:
+        names |= _INFLATION_COMPONENT_TOOLS
+    if config.disable_positioning:
+        names.add("get_cot_data")
+    if config.disable_fed_speak:
+        names.add("get_fed_speeches")
+    return frozenset(names)
+
+
+@dataclass
 class BacktestRun:
     """One replayed test date: predicted calls vs. realized outcomes."""
 
@@ -103,6 +139,12 @@ class BacktestRunner:
     ``graph`` is injectable for tests/offline runs: anything exposing
     ``propagate(ticker, trade_date) -> (final_state, signal)``. When omitted, a
     real ``TradingAgentsGraph`` is built lazily with the FI analyst set.
+
+    ``ablation_config`` drops data-source tools from the graph's analysts
+    (e.g. run with vs. without the Phase 1b inflation-component detail) to
+    test whether a source improves hit rate/calibration or just adds noise
+    and cost. Ablation removes DATA, not agents — every analyst still runs
+    with a reduced tool set.
     """
 
     def __init__(
@@ -110,10 +152,12 @@ class BacktestRunner:
         graph: Any | None = None,
         config: dict | None = None,
         ticker: str = "UST",
+        ablation_config: AblationConfig | None = None,
     ):
         self._graph = graph
         self.config = config if config is not None else get_config()
         self.ticker = ticker
+        self.ablation_config = ablation_config or AblationConfig()
 
     @property
     def graph(self):
@@ -123,7 +167,9 @@ class BacktestRunner:
             from fixedincomeagent.graph.trading_graph import TradingAgentsGraph
 
             self._graph = TradingAgentsGraph(
-                selected_analysts=_FI_ANALYSTS, config=self.config
+                selected_analysts=_FI_ANALYSTS,
+                config=self.config,
+                disabled_tools=ablation_disabled_tools(self.ablation_config),
             )
         return self._graph
 

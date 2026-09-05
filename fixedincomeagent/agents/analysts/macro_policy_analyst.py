@@ -16,7 +16,7 @@ from fixedincomeagent.agents.utils.agent_utils import (
 )
 
 
-def create_macro_policy_analyst(llm):
+def create_macro_policy_analyst(llm, disabled_tools=None):
     def macro_policy_analyst_node(state):
         current_date = state["trade_date"]
 
@@ -33,6 +33,8 @@ def create_macro_policy_analyst(llm):
             get_fomc_calendar,
             get_fed_speeches,
         ]
+        if disabled_tools:
+            tools = [t for t in tools if t.name not in disabled_tools]
 
         system_message = (
             "You are a macro and monetary-policy analyst covering US inflation "

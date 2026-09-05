@@ -99,6 +99,7 @@ class TradingAgentsGraph:
         debug=False,
         config: dict[str, Any] = None,
         callbacks: list | None = None,
+        disabled_tools=None,
     ):
         """Initialize the trading agents graph and components.
 
@@ -107,10 +108,14 @@ class TradingAgentsGraph:
             debug: Whether to run in debug mode
             config: Configuration dictionary. If None, uses default config
             callbacks: Optional list of callback handlers (e.g., for tracking LLM/tool stats)
+            disabled_tools: Optional collection of tool names to exclude from
+                both the analyst bindings and the ToolNode executors (ablation:
+                removes data, not agents).
         """
         self.debug = debug
         self.config = config or DEFAULT_CONFIG
         self.callbacks = callbacks or []
+        self.disabled_tools = frozenset(disabled_tools or ())
 
         # Update the interface's config
         set_config(self.config)
@@ -145,7 +150,7 @@ class TradingAgentsGraph:
         self.memory_log = TradingMemoryLog(self.config)
 
         # Create tool nodes
-        self.tool_nodes = self._create_tool_nodes()
+        self.tool_nodes = self._create_tool_nodes(self.disabled_tools)
 
         # Initialize components
         self.conditional_logic = ConditionalLogic(
@@ -159,6 +164,7 @@ class TradingAgentsGraph:
             self.deep_thinking_llm,
             self.tool_nodes,
             self.conditional_logic,
+            disabled_tools=self.disabled_tools,
         )
 
         self.propagator = Propagator(
@@ -223,9 +229,16 @@ class TradingAgentsGraph:
 
         return kwargs
 
-    def _create_tool_nodes(self) -> dict[str, ToolNode]:
-        """Create tool nodes for different data sources using abstract methods."""
-        return {
+    @staticmethod
+    def _create_tool_nodes(disabled_tools=None) -> dict[str, ToolNode]:
+        """Create tool nodes for different data sources using abstract methods.
+
+        ``disabled_tools`` (a collection of tool names) drops tools from every
+        node — ablation removes DATA, not agents. The analysts' bind lists are
+        filtered to the same set via GraphSetup, preserving the invariant that
+        each node registers exactly the tools its analyst binds.
+        """
+        nodes = {
             "market": ToolNode(
                 [
                     # Core stock data tools
@@ -303,6 +316,15 @@ class TradingAgentsGraph:
                 ]
             ),
         }
+        disabled = frozenset(disabled_tools or ())
+        if disabled:
+            nodes = {
+                key: ToolNode(
+                    [t for t in node.tools_by_name.values() if t.name not in disabled]
+                )
+                for key, node in nodes.items()
+            }
+        return nodes
 
     def _resolve_benchmark(self, ticker: str) -> str:
         """Pick the benchmark ticker for alpha calculation against ``ticker``.

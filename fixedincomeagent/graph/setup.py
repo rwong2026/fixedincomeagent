@@ -75,12 +75,19 @@ class GraphSetup:
         deep_thinking_llm: Any,
         tool_nodes: dict[str, ToolNode],
         conditional_logic: ConditionalLogic,
+        disabled_tools=None,
     ):
-        """Initialize with required components."""
+        """Initialize with required components.
+
+        ``disabled_tools`` (tool names) is forwarded to the analysts whose
+        factory accepts it, dropping those tools from the model's bind list
+        (ablation: removes data, not agents).
+        """
         self.quick_thinking_llm = quick_thinking_llm
         self.deep_thinking_llm = deep_thinking_llm
         self.tool_nodes = tool_nodes
         self.conditional_logic = conditional_logic
+        self.disabled_tools = frozenset(disabled_tools or ())
 
     def setup_graph(
         self, selected_analysts=("market", "social", "news", "fundamentals")
@@ -111,9 +118,13 @@ class GraphSetup:
             "social": lambda: create_sentiment_analyst(self.quick_thinking_llm),
             "news": lambda: create_news_analyst(self.quick_thinking_llm),
             "fundamentals": lambda: create_fundamentals_analyst(self.quick_thinking_llm),
-            "macro_policy": lambda: create_macro_policy_analyst(self.quick_thinking_llm),
+            "macro_policy": lambda: create_macro_policy_analyst(
+                self.quick_thinking_llm, disabled_tools=self.disabled_tools
+            ),
             "curve_technicals": lambda: create_curve_technicals_analyst(self.quick_thinking_llm),
-            "fed_speak": lambda: create_fed_speak_analyst(self.quick_thinking_llm),
+            "fed_speak": lambda: create_fed_speak_analyst(
+                self.quick_thinking_llm, disabled_tools=self.disabled_tools
+            ),
             "macro_calendar": lambda: create_macro_calendar_analyst(self.quick_thinking_llm),
         }
 
