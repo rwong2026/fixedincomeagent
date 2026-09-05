@@ -22,6 +22,7 @@ REPORT_AGENTS = [
     "analysts/macro_policy_analyst.py",
     "analysts/curve_technicals_analyst.py",
     "analysts/fed_speak_analyst.py",
+    "analysts/macro_calendar_analyst.py",
     "analysts/fundamentals_analyst.py",
     "analysts/sentiment_analyst.py",
     "researchers/bull_researcher.py",
