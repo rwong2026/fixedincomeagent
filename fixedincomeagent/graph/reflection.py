@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from ..agents.utils.argument_tagger import TaggedArgument, tag_debate_arguments
+
 
 class Reflector:
     """Handles reflection on trading decisions."""
@@ -55,3 +57,12 @@ class Reflector:
             ),
         ]
         return self.quick_thinking_llm.invoke(messages).content
+
+    def tag_debate_arguments(self, debate_history: str) -> list[TaggedArgument]:
+        """SCAFFOLDING ONLY — opt-in, not called from any live graph path.
+
+        Thin delegate to ``agents.utils.argument_tagger.tag_debate_arguments``.
+        Activated only after Phase 7's backtest validates the baseline; until
+        then nothing calls this and nothing changes about reflection behaviour.
+        """
+        return tag_debate_arguments(self.quick_thinking_llm, debate_history)
