@@ -87,18 +87,33 @@ class TreasuryFormatError(ValueError):
     """A Treasury source returned 200 with an unexpected body shape."""
 
 
+def _validate_csv_header(text: str, year: int) -> None:
+    """Fail loudly on a changed/garbled CSV body, from the feed or the cache."""
+    header = text.split("\n", 1)[0].split(",")
+    if header[0].strip() != "Date" or len(header) < 2:
+        raise TreasuryFormatError(
+            f"Treasury par yield CSV for {year} has an unexpected format: "
+            f"expected a header of 'Date,<tenor>...', got {header[0].strip()!r}. "
+            "The home.treasury.gov feed format may have changed."
+        )
+
+
 def _load_yield_csv(year: int) -> str:
     """Return the par yield curve CSV for a calendar year.
 
     Past years are immutable and cached on disk; the current year still
     updates every business day, so it is always fetched fresh. The body is
-    validated before it is cached or parsed: the feed is unversioned, so a
-    format change must fail loudly rather than be cached as final data.
+    validated before it is cached or parsed — and again on cache reads, so a
+    corrupt cache fails loudly instead of silently dropping rows: the feed is
+    unversioned, so a format change must fail loudly rather than be cached as
+    final data.
     """
     path = _yield_csv_cache_path(year)
     if year < date.today().year and os.path.exists(path):
         with open(path, encoding="utf-8") as f:
-            return f.read()
+            text = f.read()
+        _validate_csv_header(text, year)
+        return text
     text = _request(
         PAR_YIELD_CSV_URL.format(year=year),
         {
@@ -107,13 +122,7 @@ def _load_yield_csv(year: int) -> str:
             "_format": "csv",
         },
     )
-    header = text.split("\n", 1)[0].split(",")
-    if header[0].strip() != "Date" or len(header) < 2:
-        raise TreasuryFormatError(
-            f"Treasury par yield CSV for {year} has an unexpected format: "
-            f"expected a header of 'Date,<tenor>...', got {header[0].strip()!r}. "
-            "The home.treasury.gov feed format may have changed."
-        )
+    _validate_csv_header(text, year)
     if year < date.today().year:
         with open(path, "w", encoding="utf-8") as f:
             f.write(text)

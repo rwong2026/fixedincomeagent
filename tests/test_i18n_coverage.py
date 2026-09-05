@@ -27,12 +27,20 @@ REPORT_AGENTS = [
     "analysts/sentiment_analyst.py",
     "researchers/bull_researcher.py",
     "researchers/bear_researcher.py",
+    "researchers/higher_yields_researcher.py",
+    "researchers/lower_yields_researcher.py",
+    "researchers/steepener_researcher.py",
+    "researchers/flattener_researcher.py",
     "managers/research_manager.py",
     "managers/portfolio_manager.py",
+    "managers/direction_research_manager.py",
+    "managers/shape_research_manager.py",
+    "managers/fi_portfolio_manager.py",
     "risk_mgmt/aggressive_debator.py",
     "risk_mgmt/conservative_debator.py",
     "risk_mgmt/neutral_debator.py",
     "trader/trader.py",
+    "trader/fi_trader.py",
 ]
 
 

@@ -221,3 +221,26 @@ def test_fi_graph_invokes_end_to_end_offline():
     # FI Trader -> consistency check -> FI PM (free-text stub path throughout).
     assert final["trader_investment_plan"] == "stub response"
     assert final["final_trade_decision"] == "stub response"
+
+
+@pytest.mark.unit
+def test_fi_subset_graph_invokes_end_to_end_offline():
+    """Regression: an all-FI *subset* (e.g. only macro_policy) still wires the
+    full FI debate track, whose researchers read all four FI report keys. The
+    initial state must seed every key so unselected analysts' reports read as
+    "" instead of raising KeyError mid-run (after burning LLM calls)."""
+    subset = ["macro_policy"]
+    setup = _setup(subset, llm=_StubLLM())
+    graph = setup.setup_graph(subset).compile()
+    init = Propagator().create_initial_state("UST", "2026-09-04")
+    final = graph.invoke(init, config={"recursion_limit": 100})
+
+    assert final["macro_policy_report"] == "stub response"
+    # Unselected analysts never ran; their seeded keys stay empty.
+    assert final["curve_technicals_report"] == ""
+    assert final["fed_speak_report"] == ""
+    assert final["macro_calendar_report"] == ""
+    # The debate track and terminal chain still ran to completion.
+    assert final["direction_debate_state"]["judge_decision"] == "stub response"
+    assert final["shape_debate_state"]["judge_decision"] == "stub response"
+    assert final["final_trade_decision"] == "stub response"

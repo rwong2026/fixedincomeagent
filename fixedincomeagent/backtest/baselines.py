@@ -218,6 +218,16 @@ def forwards_implied_baseline(
     runs = []
     for test_date in test_dates:
         curve = _spot_curve(test_date)
+        # The y_h shortcut (shortest published par point stands in for the
+        # yield at h) is only valid when h is below that point; at or beyond
+        # it the forward formula needs a real y_h we don't have.
+        if h >= min(curve):
+            raise ValueError(
+                f"fi_horizon_days/{_TRADING_DAYS_PER_YEAR} = {h:.4f}y is not "
+                f"below the shortest par point ({min(curve):.4f}y); the y_h "
+                "shortcut is invalid — shorten fi_horizon_days or supply a "
+                "real front-end curve yield at h"
+            )
         # h (20/252y) is below the shortest published par point (1 Mo), so
         # y_h is approximated by the 1 Mo yield (see module docstring).
         y_h = curve[min(curve)]

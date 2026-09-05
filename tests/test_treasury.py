@@ -203,6 +203,19 @@ class ParYieldFetchingTests(_TreasuryTestCase):
             treasury.get_treasury_par_yields("2023-12-31", look_back_days=30)
         self.assertEqual(m.call_count, 1)  # second call served from cache
 
+    def test_corrupt_cached_csv_errors_loudly(self):
+        # A corrupt past-year cache file must fail loudly on read, not
+        # silently drop rows (the baseline path parses the cache directly).
+        path = os.path.join(self._tmp, "treasury_par_yield_curve_2023.csv")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("<html>oops</html>")
+        stub = _request_stub(csv_by_year={"2023": _PAR_CSV_2023})
+        with mock.patch.object(treasury, "_request", side_effect=stub) as m:
+            out = treasury.get_treasury_par_yields("2023-12-31", look_back_days=30)
+        self.assertIn("ERROR", out)
+        self.assertIn("Treasury", out)
+        self.assertEqual(m.call_count, 0)  # served (and rejected) from cache
+
     def test_current_year_csv_is_not_cached(self):
         # The current-year feed is still updating intraday, so it is refetched.
         year = str(date.today().year)

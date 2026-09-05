@@ -91,6 +91,14 @@ class Propagator:
             "fundamentals_report": "",
             "sentiment_report": "",
             "news_report": "",
+            # FI report keys initialized empty so an all-FI *subset* (e.g.
+            # only ["macro_policy"]) can run the FI debate track without a
+            # KeyError on unselected analysts' reports; selected analysts
+            # overwrite their key.
+            "macro_policy_report": "",
+            "curve_technicals_report": "",
+            "fed_speak_report": "",
+            "macro_calendar_report": "",
             # Equity-only keys initialized empty so _log_state never KeyErrors
             # in FI mode, where nothing writes them; equity nodes overwrite.
             "investment_plan": "",

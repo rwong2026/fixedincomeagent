@@ -13,6 +13,16 @@ needs no realtime vintage pin: current DGS data equals point-in-time data for
 these series. "Trading days" means the series' own observations — the horizon
 end is the Nth available observation after the test date, which handles
 weekends and holidays without a market-calendar dependency.
+
+Point-in-time caveat: four agent data sources are revision-leaky — the
+Cleveland Fed inflation nowcast, Zillow/Apartment List rent estimates, the NY
+Fed GSCPI, and the NY Fed Survey of Consumer Expectations. Each is served
+from a cumulative file downloaded at run time, so historical values are
+as-published-today, not as-published-on-the-test-date. The leak is revisions
+only: date filtering still holds (no future observations are ever shown), but
+a revised historical value may differ from what an agent would have seen on
+the test date. Treat affected backtests as slightly optimistic, not exact
+replays.
 """
 
 from __future__ import annotations
@@ -27,9 +37,6 @@ from fixedincomeagent.agents.risk_mgmt.fi_consistency_checker import (
 from fixedincomeagent.agents.schemas import DirectionCall, ShapeCall
 from fixedincomeagent.dataflows import fred
 from fixedincomeagent.dataflows.config import get_config
-
-# Analyst set that wires the FI dual-track pipeline (see graph/analyst_execution).
-_FI_ANALYSTS = ["macro_policy", "curve_technicals", "fed_speak", "macro_calendar"]
 
 # Buffer ahead of test_date so a baseline observation exists even when
 # test_date falls on a weekend/holiday.
@@ -164,10 +171,18 @@ class BacktestRunner:
         if self._graph is None:
             # Lazy: importing TradingAgentsGraph pulls in the whole LLM stack,
             # which offline scoring/tests never need.
+            from fixedincomeagent.graph.analyst_execution import (
+                ANALYST_NODE_SPECS,
+                FI_ANALYST_KEYS,
+            )
             from fixedincomeagent.graph.trading_graph import TradingAgentsGraph
 
+            # FI analyst set in canonical chain order — imported from
+            # graph/analyst_execution, not copied, so a new FI analyst can't
+            # drift between the graph and the backtest.
+            fi_analysts = [k for k in ANALYST_NODE_SPECS if k in FI_ANALYST_KEYS]
             self._graph = TradingAgentsGraph(
-                selected_analysts=_FI_ANALYSTS,
+                selected_analysts=fi_analysts,
                 config=self.config,
                 disabled_tools=ablation_disabled_tools(self.ablation_config),
             )

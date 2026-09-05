@@ -243,6 +243,18 @@ def test_forwards_raises_without_curve_on_or_before_test_date(_tmp_cache):
 
 
 @pytest.mark.unit
+def test_forwards_raises_when_horizon_reaches_shortest_par_point(_tmp_cache):
+    # h = 21/252 = 1/12y is NOT below the 1 Mo point: the y_h shortcut is
+    # invalid and must fail loudly rather than score a garbage baseline.
+    csv_text = _curve_csv([("01/10/2025", lambda t: 4.00)])
+    config = {**_CONFIG, "fi_horizon_days": 21}
+    with mock.patch.object(
+        treasury, "_request", side_effect=_treasury_stub(csv_text)
+    ), pytest.raises(ValueError, match="y_h"):
+        forwards_implied_baseline(["2025-01-10"], config=config)
+
+
+@pytest.mark.unit
 def test_forwards_multiple_dates_in_order(_tmp_cache):
     csv_text = _curve_csv([
         ("01/10/2025", lambda t: 4.00),

@@ -17,3 +17,10 @@ def test_fi_horizon_days():
 def test_fi_neutral_threshold_bp():
     assert DEFAULT_CONFIG["fi_neutral_threshold_bp"] == 5
     # Document: moves < this threshold are classified "neutral"
+
+def test_fi_prompt_and_backtest_config_pairs_stay_linked():
+    # Prompts read fi_tenors/fi_spreads; the backtest reads
+    # fi_tenor_series/fi_spread_definitions. Drift between the pairs silently
+    # degrades scoring (spreads skipped, not missed) — keep them in lockstep.
+    assert set(DEFAULT_CONFIG["fi_tenors"]) == set(DEFAULT_CONFIG["fi_tenor_series"])
+    assert list(DEFAULT_CONFIG["fi_spreads"]) == list(DEFAULT_CONFIG["fi_spread_definitions"])
