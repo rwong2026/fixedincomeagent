@@ -55,6 +55,22 @@ Commit to up or down only when the debate's strongest arguments clearly warrant 
             "count": direction_debate_state["count"],
         }
 
-        return {"direction_debate_state": new_direction_debate_state}
+        # Hand off to the shape debate: seed its direction_outcome with the
+        # judged direction outlook so steepener/flattener researchers argue
+        # conditioned on it. Other shape fields pass through untouched.
+        shape_debate_state = state.get("shape_debate_state", {})
+
+        return {
+            "direction_debate_state": new_direction_debate_state,
+            "shape_debate_state": {
+                "steepener_history": shape_debate_state.get("steepener_history", ""),
+                "flattener_history": shape_debate_state.get("flattener_history", ""),
+                "history": shape_debate_state.get("history", ""),
+                "current_response": shape_debate_state.get("current_response", ""),
+                "direction_outcome": outlook,
+                "judge_decision": shape_debate_state.get("judge_decision", ""),
+                "count": shape_debate_state.get("count", 0),
+            },
+        }
 
     return direction_research_manager_node

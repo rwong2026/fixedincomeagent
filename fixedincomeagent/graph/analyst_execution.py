@@ -81,6 +81,14 @@ ANALYST_NODE_SPECS: dict[str, AnalystNodeSpec] = {
 }
 
 
+# Fixed-income analyst keys. When every selected analyst is one of these, the
+# graph wires the FI dual-track debate (direction -> shape) instead of the
+# equity bull/bear -> trader -> risk pipeline (Task 4.5).
+FI_ANALYST_KEYS = frozenset(
+    {"macro_policy", "curve_technicals", "fed_speak", "macro_calendar"}
+)
+
+
 def build_analyst_execution_plan(
     selected_analysts: Iterable[str],
 ) -> AnalystExecutionPlan:

@@ -3,8 +3,10 @@
 from typing import Any
 
 from fixedincomeagent.agents.utils.agent_states import (
+    DirectionDebateState,
     InvestDebateState,
     RiskDebateState,
+    ShapeDebateState,
 )
 
 
@@ -58,6 +60,29 @@ class Propagator:
                     "current_aggressive_response": "",
                     "current_conservative_response": "",
                     "current_neutral_response": "",
+                    "judge_decision": "",
+                    "count": 0,
+                }
+            ),
+            # FI debate states are initialized for every run (cheap) so FI mode
+            # can never KeyError; equity runs leave them untouched.
+            "direction_debate_state": DirectionDebateState(
+                {
+                    "higher_yields_history": "",
+                    "lower_yields_history": "",
+                    "history": "",
+                    "current_response": "",
+                    "judge_decision": "",
+                    "count": 0,
+                }
+            ),
+            "shape_debate_state": ShapeDebateState(
+                {
+                    "steepener_history": "",
+                    "flattener_history": "",
+                    "history": "",
+                    "current_response": "",
+                    "direction_outcome": "",
                     "judge_decision": "",
                     "count": 0,
                 }
