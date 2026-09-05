@@ -411,6 +411,62 @@ def render_shape_call(call: ShapeCall) -> str:
     )
 
 
+class DirectionOutlook(BaseModel):
+    """Per-tenor direction outlook produced by the Direction Research Manager.
+
+    The judge's hand-off to the FI trader: one DirectionCall per configured
+    tenor, plus a summary of which debate arguments carried the decision.
+    """
+
+    calls: list[DirectionCall] = Field(
+        description=(
+            "Exactly one DirectionCall per configured tenor, one entry per "
+            "tenor, no tenor skipped or duplicated."
+        ),
+    )
+    summary: str = Field(
+        description=(
+            "Conversational summary of which debate arguments drove the "
+            "calls, as if to a teammate."
+        ),
+    )
+
+
+def render_direction_outlook(outlook: DirectionOutlook) -> str:
+    """Render a DirectionOutlook to markdown for the trader's prompt context."""
+    blocks = [render_direction_call(call) for call in outlook.calls]
+    blocks.append(f"**Summary**: {outlook.summary}")
+    return "\n\n".join(blocks)
+
+
+class ShapeOutlook(BaseModel):
+    """Per-spread shape outlook produced by the Shape Research Manager.
+
+    One ShapeCall per configured spread/butterfly, conditioned on the
+    direction debate's outcome, plus the judge's debate summary.
+    """
+
+    calls: list[ShapeCall] = Field(
+        description=(
+            "Exactly one ShapeCall per configured spread/butterfly, one "
+            "entry per spread, none skipped or duplicated."
+        ),
+    )
+    summary: str = Field(
+        description=(
+            "Conversational summary of which debate arguments drove the "
+            "calls, including how the direction outcome factored in."
+        ),
+    )
+
+
+def render_shape_outlook(outlook: ShapeOutlook) -> str:
+    """Render a ShapeOutlook to markdown for the trader's prompt context."""
+    blocks = [render_shape_call(call) for call in outlook.calls]
+    blocks.append(f"**Summary**: {outlook.summary}")
+    return "\n\n".join(blocks)
+
+
 # ---------------------------------------------------------------------------
 # Fixed-Income: Macro/Policy Report
 # ---------------------------------------------------------------------------
