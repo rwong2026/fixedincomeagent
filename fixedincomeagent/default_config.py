@@ -213,4 +213,23 @@ DEFAULT_CONFIG = _apply_env_overrides({
     # Debate configuration for fixed-income dual-track debate
     "max_direction_debate_rounds": 1,
     "max_shape_debate_rounds": 1,
+    # Currency-agnostic curve / central-bank config models (see fixedincomeagent.fi_config_models)
+    "fi_curves": {
+        "USD": {
+            "currency": "USD",
+            "curve_type": "UST",
+            "tenors": ["2Y", "5Y", "10Y", "30Y"],
+            "tenor_series": {"2Y": "DGS2", "5Y": "DGS5", "10Y": "DGS10", "30Y": "DGS30"},
+        },
+    },
+    "fi_central_banks": {
+        "USD": {
+            "currency": "USD",
+            "name": "Fed",
+            "policy_rate_series": "DFEDTARU",
+            "funding_rate_series": "SOFR",
+            "meeting_calendar_source": "fomc_calendar",
+            "speech_source": "fed_speeches",
+        },
+    },
 })
