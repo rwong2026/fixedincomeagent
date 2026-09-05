@@ -172,4 +172,42 @@ DEFAULT_CONFIG = _apply_env_overrides({
         ".SZ":  "399001.SZ",   # Shenzhen (SZSE Component)
         "":     "SPY",         # default for US-listed tickers (no suffix)
     },
+    # --- Fixed-Income (UST Rates & Curve) Configuration ---
+    # Tenors to generate DirectionCalls for
+    "fi_tenors": ["2Y", "5Y", "10Y", "30Y"],
+    # Spreads/butterflies to generate ShapeCalls for
+    "fi_spreads": ["2s10s", "5s30s", "2s5s10s_fly"],
+    # Prediction horizon in trading days (not calendar days)
+    "fi_horizon_days": 20,
+    # Neutral threshold: yield moves below this (in bp) are classified
+    # as "neutral" rather than directional. Documented tunable — not a
+    # magic number. Calibrate via Phase 7 backtest.
+    "fi_neutral_threshold_bp": 5,
+    # FRED series IDs for key tenors (constant maturity yields)
+    "fi_tenor_series": {
+        "2Y": "DGS2",
+        "5Y": "DGS5",
+        "10Y": "DGS10",
+        "30Y": "DGS30",
+    },
+    # FRED series for policy/funding rates
+    "fi_rate_series": {
+        "SOFR": "SOFR",
+        "EFFR": "EFFR",
+    },
+    # FRED series for inflation breakevens
+    "fi_breakeven_series": {
+        "5Y_breakeven": "T5YIE",
+        "10Y_breakeven": "T10YIE",
+        "5Y5Y_forward": "T5YIFR",
+    },
+    # Spread definitions: maps spread name → (short_tenor, long_tenor)
+    "fi_spread_definitions": {
+        "2s10s": ("2Y", "10Y"),
+        "5s30s": ("5Y", "30Y"),
+        "2s5s10s_fly": ("2Y", "5Y", "10Y"),  # butterfly: 2×belly − wings
+    },
+    # Debate configuration for fixed-income dual-track debate
+    "max_direction_debate_rounds": 1,
+    "max_shape_debate_rounds": 1,
 })
