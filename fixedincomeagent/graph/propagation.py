@@ -91,6 +91,9 @@ class Propagator:
             "fundamentals_report": "",
             "sentiment_report": "",
             "news_report": "",
+            # Equity-only keys initialized empty so _log_state never KeyErrors
+            # in FI mode, where nothing writes them; equity nodes overwrite.
+            "investment_plan": "",
         }
 
     def get_graph_args(self, callbacks: list | None = None) -> dict[str, Any]:

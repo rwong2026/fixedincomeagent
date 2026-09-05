@@ -120,11 +120,11 @@ def test_direction_manager_hands_off_to_shape_debate():
 
 @pytest.mark.unit
 def test_shape_manager_routes_to_fi_trader():
-    # Task 5.1 wired the FI Trader; Tasks 5.2/5.3 extend past it (risk, PM).
+    # Task 5.1 wired the FI Trader; Tasks 5.2/5.3 completed the terminal chain
+    # (risk consistency check -> FI PM -> END, see test_fi_portfolio_manager.py).
     edges = _edges(FI_KEYS)
     assert ("Shape Research Manager", "FI Trader") in edges
-    # PHASE 5 CUT POINT: ("FI Trader", END) becomes FI Trader -> risk check.
-    assert ("FI Trader", END) in edges
+    assert ("FI Trader", END) not in edges
 
 
 @pytest.mark.unit
@@ -218,5 +218,6 @@ def test_fi_graph_invokes_end_to_end_offline():
     assert shape["judge_decision"] == "stub response"
     assert shape["direction_outcome"] == "stub response"  # manager hand-off
     assert shape["count"] == 2
-    # FI Trader runs last (free-text stub path).
+    # FI Trader -> consistency check -> FI PM (free-text stub path throughout).
     assert final["trader_investment_plan"] == "stub response"
+    assert final["final_trade_decision"] == "stub response"

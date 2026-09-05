@@ -13,6 +13,7 @@ from fixedincomeagent.agents import (
     create_curve_technicals_analyst,
     create_direction_research_manager,
     create_fed_speak_analyst,
+    create_fi_portfolio_manager,
     create_fi_trader,
     create_flattener_researcher,
     create_fundamentals_analyst,
@@ -30,6 +31,7 @@ from fixedincomeagent.agents import (
     create_shape_research_manager,
     create_steepener_researcher,
     create_trader,
+    fi_consistency_check_node,
 )
 from fixedincomeagent.agents.utils.agent_states import AgentState
 
@@ -247,9 +249,16 @@ class GraphSetup:
                 self.conditional_logic.should_continue_shape_debate,
                 SHAPE_DEBATE_PATH_MAP,
             )
-        # PHASE 5 CUT POINT: FI Trader is wired (Task 5.1); the risk check and
-        # FI Portfolio Manager extend the graph here in Tasks 5.2/5.3. Until
-        # then the FI Trader is the terminal node.
+        # Phase 5 terminal chain (Tasks 5.1-5.3): trader -> risk consistency
+        # check -> FI Portfolio Manager. The PM writes ``final_trade_decision``
+        # (same key as the equity PM), closing the propagate() logging gap.
         workflow.add_node("FI Trader", create_fi_trader(self.quick_thinking_llm))
+        workflow.add_node("FI Consistency Check", fi_consistency_check_node)
+        workflow.add_node(
+            "FI Portfolio Manager",
+            create_fi_portfolio_manager(self.deep_thinking_llm),
+        )
         workflow.add_edge("Shape Research Manager", "FI Trader")
-        workflow.add_edge("FI Trader", END)
+        workflow.add_edge("FI Trader", "FI Consistency Check")
+        workflow.add_edge("FI Consistency Check", "FI Portfolio Manager")
+        workflow.add_edge("FI Portfolio Manager", END)

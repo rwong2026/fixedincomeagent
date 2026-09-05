@@ -10,6 +10,7 @@ from .analysts.sentiment_analyst import (
     create_social_media_analyst,  # deprecated alias kept for back-compat
 )
 from .managers.direction_research_manager import create_direction_research_manager
+from .managers.fi_portfolio_manager import create_fi_portfolio_manager
 from .managers.portfolio_manager import create_portfolio_manager
 from .managers.research_manager import create_research_manager
 from .managers.shape_research_manager import create_shape_research_manager
@@ -21,6 +22,7 @@ from .researchers.lower_yields_researcher import create_lower_yields_researcher
 from .researchers.steepener_researcher import create_steepener_researcher
 from .risk_mgmt.aggressive_debator import create_aggressive_debator
 from .risk_mgmt.conservative_debator import create_conservative_debator
+from .risk_mgmt.fi_consistency_checker import fi_consistency_check_node
 from .risk_mgmt.neutral_debator import create_neutral_debator
 from .trader.fi_trader import create_fi_trader
 from .trader.trader import create_trader
@@ -35,7 +37,9 @@ __all__ = [
     "create_bear_researcher",
     "create_bull_researcher",
     "create_direction_research_manager",
+    "create_fi_portfolio_manager",
     "create_fi_trader",
+    "fi_consistency_check_node",
     "create_flattener_researcher",
     "create_higher_yields_researcher",
     "create_lower_yields_researcher",
