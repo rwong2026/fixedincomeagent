@@ -27,7 +27,7 @@ from .symbol_utils import crypto_base
 logger = logging.getLogger(__name__)
 
 _API = "https://api.stocktwits.com/api/2/streams/symbol/{ticker}.json"
-_UA = "fixedincomeagent/0.2 (+https://github.com/TauricResearch/FixedIncomeAgent)"
+_UA = "fixedincomeagent/0.2 (+https://github.com/rwong2026/fixedincomeagent)"
 
 
 def _within_window(messages, start_date, end_date):

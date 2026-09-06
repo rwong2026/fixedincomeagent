@@ -1,35 +1,25 @@
-<p align="center">
-  <img src="assets/TauricResearch.png" style="width: 60%; height: auto;">
-</p>
-
 <div align="center" style="line-height: 1;">
   <a href="https://arxiv.org/abs/2412.20138" target="_blank"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2412.20138-B31B1B?logo=arxiv"/></a>
   <a href="https://discord.com/invite/hk9PGKShPK" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-TradingResearch-7289da?logo=discord&logoColor=white&color=7289da"/></a>
-  <a href="https://x.com/TauricResearch" target="_blank"><img alt="X Follow" src="https://img.shields.io/badge/X-TauricResearch-white?logo=x&logoColor=white"/></a>
-  <a href="https://github.com/TauricResearch/" target="_blank"><img alt="Community" src="https://img.shields.io/badge/GitHub_Community-TauricResearch-14C290?logo=discourse"/></a>
-</div>
-<br>
-<div align="center">
-  <a href="https://github.com/TauricResearch" target="_blank"><img alt="FixedIncomeAgent #1 Repository of the Day" src="https://trendshift.io/api/badge/repositories/16192" width="250" height="55"/></a>
 </div>
 <br>
 <div align="center">
   <!-- Keep these links. Translations will automatically update with the README. -->
-  <a href="https://www.readme-i18n.com/TauricResearch/FixedIncomeAgent?lang=de">Deutsch</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/FixedIncomeAgent?lang=es">Español</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/FixedIncomeAgent?lang=fr">français</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/FixedIncomeAgent?lang=ja">日本語</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/FixedIncomeAgent?lang=ko">한국어</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/FixedIncomeAgent?lang=pt">Português</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/FixedIncomeAgent?lang=ru">Русский</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/FixedIncomeAgent?lang=zh">中文</a>
+  <a href="https://www.readme-i18n.com/rwong2026/fixedincomeagent?lang=de">Deutsch</a> | 
+  <a href="https://www.readme-i18n.com/rwong2026/fixedincomeagent?lang=es">Español</a> | 
+  <a href="https://www.readme-i18n.com/rwong2026/fixedincomeagent?lang=fr">français</a> | 
+  <a href="https://www.readme-i18n.com/rwong2026/fixedincomeagent?lang=ja">日本語</a> | 
+  <a href="https://www.readme-i18n.com/rwong2026/fixedincomeagent?lang=ko">한국어</a> | 
+  <a href="https://www.readme-i18n.com/rwong2026/fixedincomeagent?lang=pt">Português</a> | 
+  <a href="https://www.readme-i18n.com/rwong2026/fixedincomeagent?lang=ru">Русский</a> | 
+  <a href="https://www.readme-i18n.com/rwong2026/fixedincomeagent?lang=zh">中文</a>
 </div>
 
 ---
 
 # FixedIncomeAgent: Multi-Agents LLM Financial Trading Framework
 
-> Forked from `TauricResearch/TradingAgents` via `rwong2026/TradingAgents`, renamed to `fixedincomeagent`.
+> Forked from `TradingAgents` via `rwong2026/TradingAgents`, renamed to `fixedincomeagent`.
 
 ## News
 - [2026-08] **FixedIncomeAgent v0.4.0** released with look-ahead / point-in-time fixes across FRED macro, social sentiment, and the decision-log memory; clearer decision signals; working CLI checkpoint resume; Trader price grounding; and the GPT-5.6 and GLM-5.3 models. See [CHANGELOG.md](CHANGELOG.md) for the full list.
@@ -40,7 +30,7 @@
 - [2026-03] **FixedIncomeAgent v0.2.3** released with multi-language support, GPT-5.4 family models, unified model catalog, backtesting date fidelity, and proxy support.
 - [2026-03] **FixedIncomeAgent v0.2.2** released with GPT-5.4/Gemini 3.1/Claude 4.6 model coverage, five-tier rating scale, OpenAI Responses API, Anthropic effort control, and cross-platform stability.
 - [2026-02] **FixedIncomeAgent v0.2.0** released with multi-provider LLM support (GPT-5.x, Gemini 3.x, Claude 4.x, Grok 4.x) and improved system architecture.
-- [2026-01] **Trading-R1** [Technical Report](https://arxiv.org/abs/2509.11420) released, with [Terminal](https://github.com/TauricResearch/Trading-R1) expected to land soon.
+- [2026-01] **Trading-R1** [Technical Report](https://arxiv.org/abs/2509.11420) released, with Terminal expected to land soon.
 
 <div align="center">
 
@@ -60,7 +50,7 @@ FixedIncomeAgent is a multi-agent trading framework that mirrors the dynamics of
   <img src="assets/schema.png" style="width: 100%; height: auto;">
 </p>
 
-> FixedIncomeAgent framework is designed for research purposes. Trading performance may vary based on many factors, including the chosen backbone language models, model temperature, trading periods, the quality of data, and other non-deterministic factors. [It is not intended as financial, investment, or trading advice.](https://tauric.ai/disclaimer/)
+> FixedIncomeAgent framework is designed for research purposes. Trading performance may vary based on many factors, including the chosen backbone language models, model temperature, trading periods, the quality of data, and other non-deterministic factors. It is not intended as financial, investment, or trading advice.
 
 Our framework decomposes complex trading tasks into specialized roles.
 

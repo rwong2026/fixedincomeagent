@@ -5,7 +5,7 @@ StockTwits cashtag streams, and Reddit posts into a single sentiment
 report. Import from ``fixedincomeagent.agents.analysts.sentiment_analyst``
 going forward; this module will be removed in a future release.
 
-See: https://github.com/TauricResearch/FixedIncomeAgent/issues/557
+See: https://github.com/rwong2026/fixedincomeagent/issues/557
 """
 
 import warnings as _warnings
