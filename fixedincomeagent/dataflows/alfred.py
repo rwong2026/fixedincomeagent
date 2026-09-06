@@ -12,6 +12,8 @@ this module pins to an arbitrary historical vintage_date for replay.
 import logging
 from datetime import datetime, timedelta
 
+import requests
+
 from .fred import (
     MAX_ROWS,
     _fred_today,
@@ -28,12 +30,19 @@ def get_vintage_dates(series_id: str, limit: int | None = None) -> list[str]:
 
     Args:
         series_id: FRED series ID (e.g. "CPIAUCSL").
-        limit: Max number of most recent vintage dates to return.
+        limit: If provided, return the most recent ``limit`` dates.
 
     Returns:
-        List of date strings (yyyy-mm-dd), most recent last.
+        List of ISO date strings (yyyy-mm-dd) in ascending order.
     """
-    data = _request("series/vintagedates", {"series_id": series_id})
+    try:
+        data = _request(
+            "series/vintagedates",
+            {"series_id": series_id, "sort_order": "asc"},
+        )
+    except requests.RequestException as e:
+        logger.warning("ALFRED vintage dates request failed for %s: %s", series_id, e)
+        return []
     dates = data.get("vintage_dates", [])
     if limit:
         dates = dates[-limit:]
@@ -66,7 +75,12 @@ def get_alfred_vintage(
     end_dt = datetime.strptime(vintage_date, "%Y-%m-%d")
     start_date = (end_dt - timedelta(days=look_back_days)).strftime("%Y-%m-%d")
 
-    meta = _request("series", {"series_id": series_id, **realtime}).get("seriess") or []
+    try:
+        meta = _request("series", {"series_id": series_id, **realtime}).get("seriess") or []
+    except requests.RequestException as e:
+        logger.warning("ALFRED metadata request failed for %s: %s", series_id, e)
+        return f"ALFRED: series '{series_id}' unavailable due to network error: {e}"
+
     if not meta:
         return f"ALFRED: series '{series_id}' not found at vintage {pit}."
     info = meta[0]
@@ -74,16 +88,20 @@ def get_alfred_vintage(
     units = info.get("units_short") or info.get("units", "")
     frequency = info.get("frequency", "")
 
-    observations = _request(
-        "series/observations",
-        {
-            "series_id": series_id,
-            "observation_start": start_date,
-            "observation_end": vintage_date,
-            "sort_order": "asc",
-            **realtime,
-        },
-    ).get("observations", [])
+    try:
+        observations = _request(
+            "series/observations",
+            {
+                "series_id": series_id,
+                "observation_start": start_date,
+                "observation_end": vintage_date,
+                "sort_order": "asc",
+                **realtime,
+            },
+        ).get("observations", [])
+    except requests.RequestException as e:
+        logger.warning("ALFRED observations request failed for %s: %s", series_id, e)
+        return f"ALFRED: observations for '{series_id}' unavailable due to network error: {e}"
 
     points = [
         (o["date"], o["value"])

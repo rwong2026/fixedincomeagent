@@ -8,6 +8,7 @@ import unittest
 from unittest import mock
 
 import pytest
+import requests
 
 import fixedincomeagent.dataflows.config as config_module
 import fixedincomeagent.default_config as default_config
@@ -119,6 +120,38 @@ class FredFormattingTests(unittest.TestCase):
         with mock.patch.object(fred, "_request", side_effect=_request_stub(meta=no_series)):
             out = fred.get_macro_data("totally_unknown_xyz", "2025-09-30", 30)
         self.assertIn("not found", out)
+
+    def test_network_error_on_series_metadata_returns_clean_message(self):
+        with mock.patch.object(
+            fred,
+            "_request",
+            side_effect=requests.exceptions.ConnectionError("Failed to resolve 'api.stlouisfed.org'"),
+        ):
+            out = fred.get_macro_data("10y_treasury", "2026-09-06", 30)
+        self.assertIn("unavailable due to network error", out)
+        self.assertIn("DGS10", out)
+
+    def test_network_error_on_observations_returns_clean_message(self):
+        def _fail_obs(path, params):
+            if path == "series":
+                return _META
+            raise requests.exceptions.ConnectionError("Connection reset by peer")
+
+        with mock.patch.object(fred, "_request", side_effect=_fail_obs):
+            out = fred.get_macro_data("10y_treasury", "2026-09-06", 30)
+        self.assertIn("unavailable due to network error", out)
+        self.assertIn("DGS10", out)
+
+    def test_session_configured_with_connection_retries(self):
+        # Verify that _request uses a session configured with connection retries
+        # so transient DNS resolution drops or socket timeouts auto-retry.
+        fred._session = None
+        session = fred._get_session()
+        adapter = session.get_adapter("https://api.stlouisfed.org")
+        self.assertIsNotNone(adapter)
+        self.assertGreaterEqual(adapter.max_retries.total, 3)
+        self.assertGreaterEqual(adapter.max_retries.connect, 3)
+
 
     def test_long_series_is_truncated_but_change_uses_full_range(self):
         # Build > MAX_ROWS observations deterministically.

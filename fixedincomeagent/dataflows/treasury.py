@@ -25,6 +25,8 @@ import os
 from datetime import date, datetime, timedelta
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from .config import get_config
 
@@ -70,9 +72,31 @@ SUMMARY_TENORS = ["2 Yr", "10 Yr"]
 _NULL = (None, "", "null")
 
 
+_session: requests.Session | None = None
+
+
+def _get_session() -> requests.Session:
+    global _session
+    if _session is None:
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            connect=3,
+            backoff_factor=0.3,
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retries)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        _session = session
+    return _session
+
+
 def _request(url: str, params: dict | None = None) -> str:
     """GET a Treasury endpoint and return the raw response body."""
-    response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+    session = _get_session()
+    response = session.get(url, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     return response.text
 
@@ -179,7 +203,8 @@ def get_treasury_par_yields(
             year_tenors, year_rows = _parse_yield_csv(_load_yield_csv(year))
             tenors.extend(t for t in year_tenors if t not in tenors)
             rows.extend(year_rows)
-    except TreasuryFormatError as e:
+    except (TreasuryFormatError, requests.RequestException) as e:
+        logger.warning("Treasury par yield request failed: %s", e)
         return f"ERROR: {e}"
     window = sorted(dv for dv in rows if start_dt <= dv[0] <= end_dt)
 
@@ -260,19 +285,23 @@ def get_auction_results(
     end_dt = datetime.strptime(curr_date, "%Y-%m-%d").date()
     start_dt = end_dt - timedelta(days=look_back_days)
 
-    payload = json.loads(
-        _request(
-            f"{FISCALDATA_API_BASE}/{AUCTIONS_ENDPOINT}",
-            {
-                "fields": ",".join(AUCTION_FIELDS),
-                "filter": (
-                    f"auction_date:gte:{start_dt},auction_date:lte:{end_dt}"
-                ),
-                "sort": "-auction_date",
-                "page[size]": PAGE_SIZE,
-            },
+    try:
+        payload = json.loads(
+            _request(
+                f"{FISCALDATA_API_BASE}/{AUCTIONS_ENDPOINT}",
+                {
+                    "fields": ",".join(AUCTION_FIELDS),
+                    "filter": (
+                        f"auction_date:gte:{start_dt},auction_date:lte:{end_dt}"
+                    ),
+                    "sort": "-auction_date",
+                    "page[size]": PAGE_SIZE,
+                },
+            )
         )
-    )
+    except requests.RequestException as e:
+        logger.warning("Fiscal Data API request failed: %s", e)
+        return f"ERROR: Fiscal Data API unavailable due to network error: {e}"
     # The API is unversioned in practice: a shape change must fail loudly
     # rather than degrade into a false "no results" report.
     if not isinstance(payload, dict) or "data" not in payload:

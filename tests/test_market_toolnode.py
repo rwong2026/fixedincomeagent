@@ -21,3 +21,13 @@ def test_market_toolnode_can_execute_verified_snapshot():
     )
     # the other core market tools must remain too
     assert {"get_stock_data", "get_indicators"} <= market_tools
+
+
+@pytest.mark.unit
+def test_tool_nodes_have_handle_tool_errors_enabled():
+    nodes = TradingAgentsGraph._create_tool_nodes(None)
+    for name, node in nodes.items():
+        assert node._handle_tool_errors is True, (
+            f"ToolNode '{name}' must have handle_tool_errors=True so tool exceptions "
+            "do not crash the agent graph."
+        )

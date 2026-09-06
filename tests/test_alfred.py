@@ -138,3 +138,22 @@ class AlfredMockedTests(unittest.TestCase):
         with mock.patch.object(alfred, "_request", _request_stub()):
             self.assertEqual(get_vintage_dates("CPIAUCSL"), ["2023-01-01", "2023-01-08", "2023-01-15"])
             self.assertEqual(get_vintage_dates("CPIAUCSL", limit=2), ["2023-01-08", "2023-01-15"])
+
+    def test_network_error_returns_clean_message(self):
+        import requests
+
+        with mock.patch.object(
+            alfred, "_request", side_effect=requests.exceptions.ConnectionError("Failed to resolve")
+        ):
+            out = get_alfred_vintage("CPIAUCSL", "2023-01-15")
+        self.assertIn("unavailable due to network error", out)
+        self.assertIn("CPIAUCSL", out)
+
+    def test_get_vintage_dates_network_error_returns_empty_list(self):
+        import requests
+
+        with mock.patch.object(
+            alfred, "_request", side_effect=requests.exceptions.ConnectionError("Failed to resolve")
+        ):
+            dates = get_vintage_dates("CPIAUCSL")
+        self.assertEqual(dates, [])

@@ -14,24 +14,33 @@ Point-in-time: the data vintage is pinned to ``curr_date`` (clamped to FRED's
 own today) exactly like fred.py, so a historical run sees only the values
 published by that date — no future revisions leak into a backtest (#1275).
 """
+import logging
 from datetime import datetime, timedelta
+
+import requests
 
 from . import fred
 from .config import get_config
 
+logger = logging.getLogger(__name__)
+
 
 def _fetch_points(series_id: str, start_date: str, curr_date: str, realtime: dict) -> list:
     """Fetch one series' in-window observations, skipping FRED's '.' missings."""
-    observations = fred._request(
-        "series/observations",
-        {
-            "series_id": series_id,
-            "observation_start": start_date,
-            "observation_end": curr_date,
-            "sort_order": "asc",
-            **realtime,
-        },
-    ).get("observations", [])
+    try:
+        observations = fred._request(
+            "series/observations",
+            {
+                "series_id": series_id,
+                "observation_start": start_date,
+                "observation_end": curr_date,
+                "sort_order": "asc",
+                **realtime,
+            },
+        ).get("observations", [])
+    except requests.RequestException as e:
+        logger.warning("Inflation breakevens request failed for %s: %s", series_id, e)
+        return []
     return [
         (o["date"], o["value"])
         for o in observations

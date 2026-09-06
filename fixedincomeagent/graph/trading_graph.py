@@ -252,13 +252,15 @@ class TradingAgentsGraph:
                     # LLM and required by its prompt; must be executable here or
                     # the call fails and the model reports it "unavailable").
                     get_verified_market_snapshot,
-                ]
+                ],
+                handle_tool_errors=True,
             ),
             "social": ToolNode(
                 [
                     # News tools for social media analysis
                     get_news,
-                ]
+                ],
+                handle_tool_errors=True,
             ),
             "news": ToolNode(
                 [
@@ -268,7 +270,8 @@ class TradingAgentsGraph:
                     get_insider_transactions,
                     get_macro_indicators,
                     get_prediction_markets,
-                ]
+                ],
+                handle_tool_errors=True,
             ),
             "fundamentals": ToolNode(
                 [
@@ -277,7 +280,8 @@ class TradingAgentsGraph:
                     get_balance_sheet,
                     get_cashflow,
                     get_income_statement,
-                ]
+                ],
+                handle_tool_errors=True,
             ),
             # Fixed-income executors — each registers exactly the tool set its
             # analyst binds via llm.bind_tools, so model calls never hit a
@@ -296,34 +300,39 @@ class TradingAgentsGraph:
                     get_consumer_inflation_expectations,
                     get_fomc_calendar,
                     get_fed_speeches,
-                ]
+                ],
+                handle_tool_errors=True,
             ),
             "curve_technicals": ToolNode(
                 [
                     get_fred_series,
                     get_treasury_par_yields,
-                ]
+                ],
+                handle_tool_errors=True,
             ),
             "fed_speak": ToolNode(
                 [
                     get_fed_speeches,
                     get_fomc_calendar,
                     get_cot_data,
-                ]
+                ],
+                handle_tool_errors=True,
             ),
             "macro_calendar": ToolNode(
                 [
                     get_fomc_calendar,
                     get_fred_series,
                     get_auction_results,
-                ]
+                ],
+                handle_tool_errors=True,
             ),
         }
         disabled = frozenset(disabled_tools or ())
         if disabled:
             nodes = {
                 key: ToolNode(
-                    [t for t in node.tools_by_name.values() if t.name not in disabled]
+                    [t for t in node.tools_by_name.values() if t.name not in disabled],
+                    handle_tool_errors=True,
                 )
                 for key, node in nodes.items()
             }

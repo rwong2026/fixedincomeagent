@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 
 import pytz
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from .errors import VendorNotConfiguredError
 
@@ -132,10 +134,32 @@ def _fred_today() -> str:
     return datetime.now(FRED_TZ).strftime("%Y-%m-%d")
 
 
+_session: requests.Session | None = None
+
+
+def _get_session() -> requests.Session:
+    global _session
+    if _session is None:
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            connect=3,
+            backoff_factor=0.3,
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retries)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        _session = session
+    return _session
+
+
 def _request(path: str, params: dict) -> dict:
     """GET a FRED endpoint, surfacing FRED's JSON error body on a bad request."""
     api_params = {**params, "api_key": get_api_key(), "file_type": "json"}
-    response = requests.get(
+    session = _get_session()
+    response = session.get(
         f"{FRED_API_BASE}/{path}", params=api_params, timeout=REQUEST_TIMEOUT
     )
     # FRED returns 400 with a JSON {"error_message": ...} for unknown series IDs
@@ -197,7 +221,12 @@ def get_macro_data(
     except ValueError as e:
         return f"FRED: {e}"
 
-    meta = _request("series", {"series_id": series_id, **realtime}).get("seriess") or []
+    try:
+        meta = _request("series", {"series_id": series_id, **realtime}).get("seriess") or []
+    except requests.RequestException as e:
+        logger.warning("FRED metadata request failed for %s: %s", series_id, e)
+        return f"FRED series '{series_id}' unavailable due to network error: {e}"
+
     if not meta:
         return (
             f"FRED series '{series_id}' not found. Pass a known alias "
@@ -209,16 +238,20 @@ def get_macro_data(
     frequency = info.get("frequency", "")
     seasonal = info.get("seasonal_adjustment_short", "")
 
-    observations = _request(
-        "series/observations",
-        {
-            "series_id": series_id,
-            "observation_start": start_date,
-            "observation_end": curr_date,
-            "sort_order": "asc",
-            **realtime,
-        },
-    ).get("observations", [])
+    try:
+        observations = _request(
+            "series/observations",
+            {
+                "series_id": series_id,
+                "observation_start": start_date,
+                "observation_end": curr_date,
+                "sort_order": "asc",
+                **realtime,
+            },
+        ).get("observations", [])
+    except requests.RequestException as e:
+        logger.warning("FRED observations request failed for %s: %s", series_id, e)
+        return f"FRED series '{series_id}' observations unavailable due to network error: {e}"
 
     # FRED encodes a missing observation as ".".
     points = [
