@@ -17,7 +17,7 @@
 
 ---
 
-# FixedIncomeAgent: Multi-Agents LLM Financial Trading Framework
+# FixedIncomeAgent: Multi-Agents LLM Framework
 
 > Forked from `TradingAgents` via `rwong2026/TradingAgents`, renamed to `fixedincomeagent`.
 
@@ -286,7 +286,7 @@ Please reference our work if you find *FixedIncomeAgent* provides you with some 
 
 ```
 @misc{xiao2025fixedincomeagentmultiagentsllmfinancial,
-      title={FixedIncomeAgent: Multi-Agents LLM Financial Trading Framework}, 
+      title={FixedIncomeAgent: Multi-Agents LLM Framework}, 
       author={Yijia Xiao and Edward Sun and Di Luo and Wei Wang},
       year={2025},
       eprint={2412.20138},

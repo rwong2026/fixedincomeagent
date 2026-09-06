@@ -67,7 +67,7 @@ else:
 
 app = typer.Typer(
     name="FixedIncomeAgent",
-    help="FixedIncomeAgent CLI: Multi-Agents LLM Financial Trading Framework",
+    help="FixedIncomeAgent CLI: Multi-Agents LLM Framework",
     add_completion=True,  # Enable shell completion
 )
 
@@ -602,7 +602,7 @@ def get_user_selections():
 
     # Create welcome box content
     welcome_content = f"{welcome_ascii}\n"
-    welcome_content += "[bold green]FixedIncomeAgent: Multi-Agents LLM Financial Trading Framework - CLI[/bold green]\n\n"
+    welcome_content += "[bold green]FixedIncomeAgent: Multi-Agents LLM Framework - CLI[/bold green]\n\n"
     welcome_content += "[bold]Workflow Steps:[/bold]\n"
     welcome_content += "I. Analyst Team → II. Research Team → III. Trader → IV. Risk Management → V. Portfolio Management\n\n"
     welcome_content += (
@@ -615,7 +615,7 @@ def get_user_selections():
         border_style="green",
         padding=(1, 2),
         title="Welcome to FixedIncomeAgent",
-        subtitle="Multi-Agents LLM Financial Trading Framework",
+        subtitle="Multi-Agents LLM Framework",
     )
     console.print(Align.center(welcome_box))
     console.print()
