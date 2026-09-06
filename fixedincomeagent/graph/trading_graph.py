@@ -13,6 +13,7 @@ from langgraph.prebuilt import ToolNode
 
 # Import the abstract tool methods from agent_utils
 from fixedincomeagent.agents.utils.agent_utils import (
+    build_fi_instrument_context,
     build_instrument_context,
     get_alfred_vintage,
     get_auction_results,
@@ -49,6 +50,7 @@ from fixedincomeagent.default_config import DEFAULT_CONFIG
 from fixedincomeagent.llm_clients import create_llm_client
 from fixedincomeagent.reporting import write_report_tree
 
+from .analyst_execution import FI_ANALYST_KEYS
 from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
 from .conditional_logic import ConditionalLogic
 from .propagation import Propagator
@@ -449,7 +451,14 @@ class TradingAgentsGraph:
         hallucinating one from the price chart (#814). Both the propagate()
         path and the CLI call this so the resolved identity reaches the whole
         graph regardless of entry point.
+
+        FI mode analyzes a yield curve, not a tradable company, so it skips
+        the yfinance identity lookup (a label like ``UST`` would resolve to
+        the ProShares Ultra 7-10 Year Treasury ETF) and anchors agents to the
+        rates/curve subject instead.
         """
+        if set(self.selected_analysts) <= FI_ANALYST_KEYS:
+            return build_fi_instrument_context(ticker)
         identity = resolve_instrument_identity(ticker)
         return build_instrument_context(ticker, asset_type, identity)
 

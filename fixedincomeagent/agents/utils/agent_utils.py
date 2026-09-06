@@ -231,6 +231,24 @@ def get_instrument_context_from_state(state: Mapping[str, Any]) -> str:
     )
 
 
+def build_fi_instrument_context(ticker: str) -> str:
+    """Instrument context for fixed-income (rates/curve) runs.
+
+    FI mode analyzes a sovereign yield curve, not a tradable company, so the
+    equity identity lookup must not run: a label like ``UST`` would otherwise
+    resolve through yfinance to the ProShares Ultra 7-10 Year Treasury ETF
+    and anchor every agent to an equity instrument (live-run finding).
+    """
+    return (
+        f"The subject of this analysis is the US Treasury yield curve (USD), "
+        f"labeled `{ticker}` for this run. This is a fixed-income rates/curve "
+        "analysis, NOT analysis of a company or exchange-traded fund. Do not "
+        "resolve the label through equity data providers and do not describe "
+        "it as a stock or ETF. The deliverable is per-tenor yield-direction "
+        "calls and per-spread curve-shape calls over the configured horizon."
+    )
+
+
 def create_msg_delete():
     def delete_messages(state):
         """Clear messages and add a context-anchored placeholder.

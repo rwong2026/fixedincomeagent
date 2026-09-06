@@ -8,11 +8,13 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, RemoveMessage
 
 from fixedincomeagent.agents.utils.agent_utils import (
+    build_fi_instrument_context,
     build_instrument_context,
     create_msg_delete,
     get_instrument_context_from_state,
     resolve_instrument_identity,
 )
+from fixedincomeagent.graph.trading_graph import TradingAgentsGraph
 
 
 @pytest.mark.unit
@@ -116,6 +118,39 @@ class GetInstrumentContextFromStateTests(unittest.TestCase):
             {"company_of_interest": "BTC-USD", "asset_type": "crypto"}
         )
         self.assertIn("crypto asset", context)
+
+
+@pytest.mark.unit
+class FIInstrumentContextTests(unittest.TestCase):
+    """FI mode must anchor agents to the yield curve, not resolve the ticker
+    through yfinance (a `UST` label would otherwise become the ProShares ETF)."""
+
+    def test_fi_context_is_rates_identity_not_equity(self):
+        context = build_fi_instrument_context("UST")
+        self.assertIn("US Treasury yield curve", context)
+        self.assertIn("UST", context)
+        self.assertIn("NOT analysis of a company or exchange-traded fund", context)
+        self.assertNotIn("ProShares", context)
+
+    def test_fi_mode_graph_branch_skips_yfinance(self):
+        graph = object.__new__(TradingAgentsGraph)
+        graph.selected_analysts = ["macro_policy", "curve_technicals", "fed_speak", "macro_calendar"]
+        with patch(
+            "fixedincomeagent.graph.trading_graph.resolve_instrument_identity"
+        ) as mock_resolve:
+            context = graph.resolve_instrument_context("UST")
+        mock_resolve.assert_not_called()
+        self.assertIn("US Treasury yield curve", context)
+
+    def test_equity_mode_graph_branch_still_resolves(self):
+        graph = object.__new__(TradingAgentsGraph)
+        graph.selected_analysts = ["market", "news"]
+        with patch(
+            "fixedincomeagent.graph.trading_graph.resolve_instrument_identity",
+            return_value={"company_name": "NVIDIA"},
+        ):
+            context = graph.resolve_instrument_context("NVDA")
+        self.assertIn("NVIDIA", context)
 
 
 @pytest.mark.unit
