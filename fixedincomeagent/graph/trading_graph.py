@@ -710,35 +710,40 @@ class TradingAgentsGraph:
 
     def _log_state(self, trade_date, final_state):
         """Log the final state to a JSON file."""
-        self.log_states_dict[str(trade_date)] = {
-            "company_of_interest": final_state["company_of_interest"],
-            "trade_date": final_state["trade_date"],
-            "market_report": final_state["market_report"],
-            "sentiment_report": final_state["sentiment_report"],
-            "news_report": final_state["news_report"],
-            "fundamentals_report": final_state["fundamentals_report"],
-            "investment_debate_state": {
-                "bull_history": final_state["investment_debate_state"]["bull_history"],
-                "bear_history": final_state["investment_debate_state"]["bear_history"],
-                "history": final_state["investment_debate_state"]["history"],
-                "current_response": final_state["investment_debate_state"][
-                    "current_response"
-                ],
-                "judge_decision": final_state["investment_debate_state"][
-                    "judge_decision"
-                ],
-            },
-            "trader_investment_decision": final_state["trader_investment_plan"],
-            "risk_debate_state": {
-                "aggressive_history": final_state["risk_debate_state"]["aggressive_history"],
-                "conservative_history": final_state["risk_debate_state"]["conservative_history"],
-                "neutral_history": final_state["risk_debate_state"]["neutral_history"],
-                "history": final_state["risk_debate_state"]["history"],
-                "judge_decision": final_state["risk_debate_state"]["judge_decision"],
-            },
-            "investment_plan": final_state["investment_plan"],
-            "final_trade_decision": final_state["final_trade_decision"],
+        state_dict = {
+            "company_of_interest": final_state.get("company_of_interest"),
+            "trade_date": final_state.get("trade_date"),
+            "final_trade_decision": final_state.get("final_trade_decision"),
+            "investment_plan": final_state.get("investment_plan"),
+            "trader_investment_decision": final_state.get("trader_investment_plan")
+            or final_state.get("trader_investment_decision"),
         }
+
+        # Equity state keys
+        for key in (
+            "market_report",
+            "sentiment_report",
+            "news_report",
+            "fundamentals_report",
+            "investment_debate_state",
+            "risk_debate_state",
+        ):
+            if key in final_state:
+                state_dict[key] = final_state[key]
+
+        # Fixed-income state keys
+        for key in (
+            "macro_policy_report",
+            "curve_technicals_report",
+            "fed_speak_report",
+            "macro_calendar_report",
+            "direction_debate_state",
+            "shape_debate_state",
+        ):
+            if key in final_state:
+                state_dict[key] = final_state[key]
+
+        self.log_states_dict[str(trade_date)] = state_dict
 
         # Save to file. Reject ticker values that would escape the
         # results directory when joined as a path component.
