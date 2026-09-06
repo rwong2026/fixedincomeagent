@@ -45,6 +45,7 @@ from fixedincomeagent.agents.utils.agent_utils import (
 )
 from fixedincomeagent.agents.utils.memory import TradingMemoryLog
 from fixedincomeagent.dataflows.config import set_config
+from fixedincomeagent.dataflows.treasury_benchmark import calculate_treasury_curve_benchmark
 from fixedincomeagent.dataflows.utils import safe_ticker_component
 from fixedincomeagent.default_config import DEFAULT_CONFIG
 from fixedincomeagent.llm_clients import create_llm_client
@@ -115,7 +116,7 @@ class TradingAgentsGraph:
                 removes data, not agents).
         """
         self.debug = debug
-        self.config = config or DEFAULT_CONFIG
+        self.config = {**DEFAULT_CONFIG, **(config or {})}
         self.callbacks = callbacks or []
         self.disabled_tools = frozenset(disabled_tools or ())
 
@@ -402,6 +403,14 @@ class TradingAgentsGraph:
             )
             return None, None, None, None
 
+    @property
+    def fi_mode(self) -> bool:
+        """True when only fixed-income analysts are active."""
+        analysts = getattr(self, "selected_analysts", None)
+        if not analysts or not isinstance(analysts, (list, tuple, set)):
+            return False
+        return bool(analysts) and set(analysts) <= FI_ANALYST_KEYS
+
     def _resolve_pending_entries(self, ticker: str) -> None:
         """Resolve pending log entries for ticker at the start of a new run.
 
@@ -414,6 +423,10 @@ class TradingAgentsGraph:
         """
         pending = [e for e in self.memory_log.get_pending_entries() if e["ticker"] == ticker]
         if not pending:
+            return
+
+        if self.fi_mode is True:
+            self._resolve_fi_pending_entries(ticker, pending)
             return
 
         benchmark = self._resolve_benchmark(ticker)
@@ -443,6 +456,42 @@ class TradingAgentsGraph:
         if updates:
             self.memory_log.batch_update_with_outcomes(updates)
 
+    def _resolve_fi_pending_entries(self, ticker: str, pending: list[dict]) -> None:
+        """Resolve pending log entries for fixed-income runs using Treasury curve benchmark."""
+        updates = []
+        holding_days = int(self.config.get("fi_horizon_days", 5))
+        neutral_threshold = float(self.config.get("fi_neutral_threshold_bp", 5.0))
+
+        for entry in pending:
+            benchmark_res = calculate_treasury_curve_benchmark(
+                trade_date=entry["date"],
+                holding_days=holding_days,
+                decisions=entry.get("decision", ""),
+                neutral_threshold_bp=neutral_threshold,
+            )
+            if benchmark_res is None:
+                continue
+
+            reflection = self.reflector.reflect_on_fi_decision(
+                final_decision=entry.get("decision", ""),
+                benchmark_bp=benchmark_res["benchmark_bp"],
+                hit_rate=benchmark_res["hit_rate"],
+                tenor_changes=benchmark_res["tenor_changes"],
+                alpha_bp=benchmark_res.get("alpha_bp", 0.0),
+            )
+            updates.append({
+                "ticker": ticker,
+                "trade_date": entry["date"],
+                "raw_return": benchmark_res["hit_rate"],
+                "alpha_return": f"{benchmark_res['alpha_bp']:+.1f}bp",
+                "holding_days": benchmark_res["holding_days"],
+                "reflection": reflection,
+                "resolution_date": benchmark_res["resolution_date"],
+            })
+
+        if updates:
+            self.memory_log.batch_update_with_outcomes(updates)
+
     def resolve_instrument_context(self, ticker: str, asset_type: str = "stock") -> str:
         """Resolve ticker identity once and return the full instrument context.
 
@@ -457,7 +506,7 @@ class TradingAgentsGraph:
         the ProShares Ultra 7-10 Year Treasury ETF) and anchors agents to the
         rates/curve subject instead.
         """
-        if set(self.selected_analysts) <= FI_ANALYST_KEYS:
+        if self.fi_mode:
             return build_fi_instrument_context(ticker)
         identity = resolve_instrument_identity(ticker)
         return build_instrument_context(ticker, asset_type, identity)

@@ -108,13 +108,24 @@ class TradingMemoryLog:
 
     # --- Update path (Phase B) ---
 
+    @staticmethod
+    def _format_metric(val: float | str) -> str:
+        if isinstance(val, (int, float)):
+            return f"{val:+.1%}"
+        return str(val)
+
+    @staticmethod
+    def _format_holding(days: int | str) -> str:
+        s = str(days).strip()
+        return s if s.endswith("d") else f"{s}d"
+
     def update_with_outcome(
         self,
         ticker: str,
         trade_date: str,
-        raw_return: float,
-        alpha_return: float,
-        holding_days: int,
+        raw_return: float | str,
+        alpha_return: float | str,
+        holding_days: int | str,
         reflection: str,
         resolution_date: str | None = None,
     ) -> None:
@@ -132,8 +143,8 @@ class TradingMemoryLog:
         blocks = text.split(self._SEPARATOR)
 
         pending_prefix = f"[{trade_date} | {ticker} |"
-        raw_pct = f"{raw_return:+.1%}"
-        alpha_pct = f"{alpha_return:+.1%}"
+        raw_pct = self._format_metric(raw_return)
+        alpha_pct = self._format_metric(alpha_return)
 
         updated = False
         new_blocks = []
@@ -205,8 +216,8 @@ class TradingMemoryLog:
                 if tag_line.startswith(pending_prefix) and tag_line.endswith("| pending]"):
                     fields = [f.strip() for f in tag_line[1:-1].split("|")]
                     rating = fields[2]
-                    raw_pct = f"{upd['raw_return']:+.1%}"
-                    alpha_pct = f"{upd['alpha_return']:+.1%}"
+                    raw_pct = self._format_metric(upd["raw_return"])
+                    alpha_pct = self._format_metric(upd["alpha_return"])
                     new_tag = self._resolved_tag(
                         trade_date, ticker, rating, raw_pct, alpha_pct,
                         upd["holding_days"], upd.get("resolution_date"),
@@ -240,7 +251,8 @@ class TradingMemoryLog:
         is the point-in-time cutoff a later run filters on (#1251). Omitted when
         unavailable, keeping the legacy 6-field tag.
         """
-        tag = f"[{trade_date} | {ticker} | {rating} | {raw_pct} | {alpha_pct} | {holding_days}d"
+        holding_str = TradingMemoryLog._format_holding(holding_days)
+        tag = f"[{trade_date} | {ticker} | {rating} | {raw_pct} | {alpha_pct} | {holding_str}"
         if resolution_date:
             tag += f" | resolved:{resolution_date}"
         return tag + "]"
