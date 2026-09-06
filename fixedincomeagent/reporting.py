@@ -19,31 +19,66 @@ def write_report_tree(final_state: dict, ticker: str, save_path) -> Path:
     # 1. Analysts
     analysts_dir = save_path / "1_analysts"
     analyst_parts = []
-    if final_state.get("market_report"):
-        analysts_dir.mkdir(exist_ok=True)
-        (analysts_dir / "market.md").write_text(final_state["market_report"], encoding="utf-8")
-        analyst_parts.append(("Market Analyst", final_state["market_report"]))
-    if final_state.get("sentiment_report"):
-        analysts_dir.mkdir(exist_ok=True)
-        (analysts_dir / "sentiment.md").write_text(final_state["sentiment_report"], encoding="utf-8")
-        analyst_parts.append(("Sentiment Analyst", final_state["sentiment_report"]))
-    if final_state.get("news_report"):
-        analysts_dir.mkdir(exist_ok=True)
-        (analysts_dir / "news.md").write_text(final_state["news_report"], encoding="utf-8")
-        analyst_parts.append(("News Analyst", final_state["news_report"]))
-    if final_state.get("fundamentals_report"):
-        analysts_dir.mkdir(exist_ok=True)
-        (analysts_dir / "fundamentals.md").write_text(final_state["fundamentals_report"], encoding="utf-8")
-        analyst_parts.append(("Fundamentals Analyst", final_state["fundamentals_report"]))
+    analyst_keys = [
+        ("macro_policy_report", "Macro Policy Analyst"),
+        ("curve_technicals_report", "Curve Technicals Analyst"),
+        ("fed_speak_report", "Fed Speak Analyst"),
+        ("macro_calendar_report", "Macro Calendar Analyst"),
+        ("market_report", "Market Analyst"),
+        ("sentiment_report", "Sentiment Analyst"),
+        ("news_report", "News Analyst"),
+        ("fundamentals_report", "Fundamentals Analyst"),
+    ]
+    for rkey, rname in analyst_keys:
+        if final_state.get(rkey):
+            analysts_dir.mkdir(exist_ok=True)
+            fname = rkey.replace("_report", "") + ".md"
+            (analysts_dir / fname).write_text(final_state[rkey], encoding="utf-8")
+            analyst_parts.append((rname, final_state[rkey]))
+
     if analyst_parts:
         content = "\n\n".join(f"### {name}\n{text}" for name, text in analyst_parts)
         sections.append(f"## I. Analyst Team Reports\n\n{content}")
 
-    # 2. Research
+    # 2. Research & Debates
+    research_dir = save_path / "2_research"
+    research_parts = []
+
+    # FI Direction Debate
+    if final_state.get("direction_debate_state"):
+        dir_debate = final_state["direction_debate_state"]
+        if dir_debate.get("higher_yields_history"):
+            research_dir.mkdir(exist_ok=True)
+            (research_dir / "direction_higher.md").write_text(dir_debate["higher_yields_history"], encoding="utf-8")
+            research_parts.append(("Higher Yields Researcher", dir_debate["higher_yields_history"]))
+        if dir_debate.get("lower_yields_history"):
+            research_dir.mkdir(exist_ok=True)
+            (research_dir / "direction_lower.md").write_text(dir_debate["lower_yields_history"], encoding="utf-8")
+            research_parts.append(("Lower Yields Researcher", dir_debate["lower_yields_history"]))
+        if dir_debate.get("judge_decision"):
+            research_dir.mkdir(exist_ok=True)
+            (research_dir / "direction_manager.md").write_text(dir_debate["judge_decision"], encoding="utf-8")
+            research_parts.append(("Direction Research Manager", dir_debate["judge_decision"]))
+
+    # FI Shape Debate
+    if final_state.get("shape_debate_state"):
+        shape_debate = final_state["shape_debate_state"]
+        if shape_debate.get("steepener_history"):
+            research_dir.mkdir(exist_ok=True)
+            (research_dir / "shape_steepener.md").write_text(shape_debate["steepener_history"], encoding="utf-8")
+            research_parts.append(("Steepener Researcher", shape_debate["steepener_history"]))
+        if shape_debate.get("flattener_history"):
+            research_dir.mkdir(exist_ok=True)
+            (research_dir / "shape_flattener.md").write_text(shape_debate["flattener_history"], encoding="utf-8")
+            research_parts.append(("Flattener Researcher", shape_debate["flattener_history"]))
+        if shape_debate.get("judge_decision"):
+            research_dir.mkdir(exist_ok=True)
+            (research_dir / "shape_manager.md").write_text(shape_debate["judge_decision"], encoding="utf-8")
+            research_parts.append(("Shape Research Manager", shape_debate["judge_decision"]))
+
+    # Equity Research Debate
     if final_state.get("investment_debate_state"):
-        research_dir = save_path / "2_research"
         debate = final_state["investment_debate_state"]
-        research_parts = []
         if debate.get("bull_history"):
             research_dir.mkdir(exist_ok=True)
             (research_dir / "bull.md").write_text(debate["bull_history"], encoding="utf-8")
@@ -56,9 +91,10 @@ def write_report_tree(final_state: dict, ticker: str, save_path) -> Path:
             research_dir.mkdir(exist_ok=True)
             (research_dir / "manager.md").write_text(debate["judge_decision"], encoding="utf-8")
             research_parts.append(("Research Manager", debate["judge_decision"]))
-        if research_parts:
-            content = "\n\n".join(f"### {name}\n{text}" for name, text in research_parts)
-            sections.append(f"## II. Research Team Decision\n\n{content}")
+
+    if research_parts:
+        content = "\n\n".join(f"### {name}\n{text}" for name, text in research_parts)
+        sections.append(f"## II. Research Team Decision\n\n{content}")
 
     # 3. Trading
     if final_state.get("trader_investment_plan"):
@@ -67,7 +103,7 @@ def write_report_tree(final_state: dict, ticker: str, save_path) -> Path:
         (trading_dir / "trader.md").write_text(final_state["trader_investment_plan"], encoding="utf-8")
         sections.append(f"## III. Trading Team Plan\n\n### Trader\n{final_state['trader_investment_plan']}")
 
-    # 4. Risk Management
+    # 4. Risk Management (Equity)
     if final_state.get("risk_debate_state"):
         risk_dir = save_path / "4_risk"
         risk = final_state["risk_debate_state"]
@@ -94,6 +130,13 @@ def write_report_tree(final_state: dict, ticker: str, save_path) -> Path:
             portfolio_dir.mkdir(exist_ok=True)
             (portfolio_dir / "decision.md").write_text(risk["judge_decision"], encoding="utf-8")
             sections.append(f"## V. Portfolio Manager Decision\n\n### Portfolio Manager\n{risk['judge_decision']}")
+
+    # 5. FI Portfolio Manager Decision (when final_trade_decision exists without risk_debate_state)
+    if final_state.get("final_trade_decision") and not final_state.get("risk_debate_state"):
+        portfolio_dir = save_path / "5_portfolio"
+        portfolio_dir.mkdir(exist_ok=True)
+        (portfolio_dir / "decision.md").write_text(final_state["final_trade_decision"], encoding="utf-8")
+        sections.append(f"## V. Portfolio Manager Decision\n\n### FI Portfolio Manager\n{final_state['final_trade_decision']}")
 
     # Write consolidated report
     header = f"# Trading Analysis Report: {ticker}\n\nGenerated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"

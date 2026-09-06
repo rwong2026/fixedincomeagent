@@ -11,14 +11,25 @@ from fixedincomeagent.llm_clients.model_catalog import get_model_options
 
 console = Console()
 
-TICKER_INPUT_EXAMPLES = "SPY, 0700.HK, BTC-USD"
+TICKER_INPUT_EXAMPLES = "UST, 10Y, SPY, 0700.HK, BTC-USD"
 
 ANALYST_ORDER = [
+    ("Macro Policy Analyst", AnalystType.MACRO_POLICY),
+    ("Curve Technicals Analyst", AnalystType.CURVE_TECHNICALS),
+    ("Fed Speak Analyst", AnalystType.FED_SPEAK),
+    ("Macro Calendar Analyst", AnalystType.MACRO_CALENDAR),
     ("Market Analyst", AnalystType.MARKET),
     ("Sentiment Analyst", AnalystType.SOCIAL),
     ("News Analyst", AnalystType.NEWS),
     ("Fundamentals Analyst", AnalystType.FUNDAMENTALS),
 ]
+
+FI_ANALYSTS = {
+    AnalystType.MACRO_POLICY,
+    AnalystType.CURVE_TECHNICALS,
+    AnalystType.FED_SPEAK,
+    AnalystType.MACRO_CALENDAR,
+}
 
 CRYPTO_SUFFIXES = ("-USD", "-USDT", "-USDC", "-BTC", "-ETH")
 
@@ -28,24 +39,24 @@ def is_valid_ticker_input(value: str) -> bool:
 
     Allows the characters Yahoo symbols use, including ``=`` for futures/forex
     like ``GC=F`` and ``EURUSD=X`` (#980), and ``^`` for indices. Empty input is
-    allowed (it defaults to SPY downstream).
+    allowed (it defaults to UST downstream).
     """
     v = value.strip()
     return not v or (all(ch.isalnum() or ch in "._-^=" for ch in v) and len(v) <= 32)
 
 
 def get_ticker() -> str:
-    """Prompt the user to enter a ticker symbol, preserving exchange suffixes.
+    """Prompt the user to enter a curve or ticker symbol, preserving exchange suffixes.
 
     Uses questionary.text (not typer.prompt, which strips trailing dot-suffixes
     like ``000404.SH`` on some shells) and validates the symbol charset so an
-    obvious typo is caught before the run starts.
+    obvious typo is caught before the run starts. Defaults to 'UST'.
     """
     ticker = questionary.text(
-        f"Enter ticker symbol (e.g. {TICKER_INPUT_EXAMPLES}):",
+        f"Enter curve or ticker symbol (default: UST; e.g. {TICKER_INPUT_EXAMPLES}):",
         validate=lambda x: (
             is_valid_ticker_input(x)
-            or "Please enter a valid ticker symbol, e.g. AAPL, 000404.SZ, 0700.HK, GC=F."
+            or "Please enter a valid ticker or curve symbol, e.g. UST, 10Y, SPY, GC=F."
         ),
         style=questionary.Style(
             [
@@ -59,7 +70,7 @@ def get_ticker() -> str:
         console.print("\n[red]No ticker symbol provided. Exiting...[/red]")
         exit(1)
 
-    return normalize_ticker_symbol(ticker) if ticker.strip() else "SPY"
+    return normalize_ticker_symbol(ticker) if ticker.strip() else "UST"
 
 
 def normalize_ticker_symbol(ticker: str) -> str:
@@ -141,7 +152,11 @@ def select_analysts(asset_type: AssetType = AssetType.STOCK) -> list[AnalystType
     choices = questionary.checkbox(
         "Select Your [Analysts Team]:",
         choices=[
-            questionary.Choice(display, value=value)
+            questionary.Choice(
+                display,
+                value=value,
+                checked=value in FI_ANALYSTS,
+            )
             for display, value in ANALYST_ORDER
             if value in available_analysts
         ],

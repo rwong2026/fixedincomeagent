@@ -74,26 +74,42 @@ app = typer.Typer(
 
 # Create a deque to store recent messages with a maximum length
 class MessageBuffer:
-    # Fixed teams that always run (not user-selectable)
-    FIXED_AGENTS = {
+    FI_ANALYST_KEYS = frozenset(
+        {"macro_policy", "curve_technicals", "fed_speak", "macro_calendar"}
+    )
+
+    # Fixed teams for equity mode
+    EQUITY_FIXED_AGENTS = {
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
         "Trading Team": ["Trader"],
         "Risk Management": ["Aggressive Analyst", "Neutral Analyst", "Conservative Analyst"],
         "Portfolio Management": ["Portfolio Manager"],
     }
 
+    # Fixed teams for FI mode
+    FI_FIXED_AGENTS = {
+        "Direction Debate": ["Higher Yields Researcher", "Lower Yields Researcher", "Direction Research Manager"],
+        "Shape Debate": ["Steepener Researcher", "Flattener Researcher", "Shape Research Manager"],
+        "FI Trading": ["FI Trader", "FI Consistency Check", "FI Portfolio Manager"],
+    }
+
+    # Backwards-compatibility alias
+    FIXED_AGENTS = EQUITY_FIXED_AGENTS
+
     # Analyst name mapping
     ANALYST_MAPPING = {
+        "macro_policy": "Macro Policy Analyst",
+        "curve_technicals": "Curve Technicals Analyst",
+        "fed_speak": "Fed Speak Analyst",
+        "macro_calendar": "Macro Calendar Analyst",
         "market": "Market Analyst",
         "social": "Sentiment Analyst",
         "news": "News Analyst",
         "fundamentals": "Fundamentals Analyst",
     }
 
-    # Report section mapping: section -> (analyst_key for filtering, finalizing_agent)
-    # analyst_key: which analyst selection controls this section (None = always included)
-    # finalizing_agent: which agent must be "completed" for this report to count as done
-    REPORT_SECTIONS = {
+    # Equity report section mapping: section -> (analyst_key for filtering, finalizing_agent)
+    EQUITY_REPORT_SECTIONS = {
         "market_report": ("market", "Market Analyst"),
         "sentiment_report": ("social", "Sentiment Analyst"),
         "news_report": ("news", "News Analyst"),
@@ -102,6 +118,21 @@ class MessageBuffer:
         "trader_investment_plan": (None, "Trader"),
         "final_trade_decision": (None, "Portfolio Manager"),
     }
+
+    # FI report section mapping
+    FI_REPORT_SECTIONS = {
+        "macro_policy_report": ("macro_policy", "Macro Policy Analyst"),
+        "curve_technicals_report": ("curve_technicals", "Curve Technicals Analyst"),
+        "fed_speak_report": ("fed_speak", "Fed Speak Analyst"),
+        "macro_calendar_report": ("macro_calendar", "Macro Calendar Analyst"),
+        "direction_debate_state": (None, "Direction Research Manager"),
+        "shape_debate_state": (None, "Shape Research Manager"),
+        "trader_investment_plan": (None, "FI Trader"),
+        "final_trade_decision": (None, "FI Portfolio Manager"),
+    }
+
+    # Backwards-compatibility combined mapping
+    REPORT_SECTIONS = {**EQUITY_REPORT_SECTIONS, **FI_REPORT_SECTIONS}
 
     def __init__(self, max_length=100):
         self.messages = deque(maxlen=max_length)
@@ -112,6 +143,7 @@ class MessageBuffer:
         self.current_agent = None
         self.report_sections = {}
         self.selected_analysts = []
+        self.fi_mode = False
         self._processed_message_ids = set()
 
     def init_for_analysis(self, selected_analysts):
@@ -121,6 +153,10 @@ class MessageBuffer:
             selected_analysts: List of analyst type strings (e.g., ["market", "news"])
         """
         self.selected_analysts = [a.lower() for a in selected_analysts]
+        self.fi_mode = bool(self.selected_analysts) and set(self.selected_analysts) <= self.FI_ANALYST_KEYS
+
+        fixed_agents = self.FI_FIXED_AGENTS if self.fi_mode else self.EQUITY_FIXED_AGENTS
+        active_report_sections = self.FI_REPORT_SECTIONS if self.fi_mode else self.EQUITY_REPORT_SECTIONS
 
         # Build agent_status dynamically
         self.agent_status = {}
@@ -131,13 +167,13 @@ class MessageBuffer:
                 self.agent_status[self.ANALYST_MAPPING[analyst_key]] = "pending"
 
         # Add fixed teams
-        for team_agents in self.FIXED_AGENTS.values():
+        for team_agents in fixed_agents.values():
             for agent in team_agents:
                 self.agent_status[agent] = "pending"
 
         # Build report_sections dynamically
         self.report_sections = {}
-        for section, (analyst_key, _) in self.REPORT_SECTIONS.items():
+        for section, (analyst_key, _) in active_report_sections.items():
             if analyst_key is None or analyst_key in self.selected_analysts:
                 self.report_sections[section] = None
 
@@ -158,11 +194,12 @@ class MessageBuffer:
 
         This prevents interim updates (like debate rounds) from counting as completed.
         """
+        active_report_sections = self.FI_REPORT_SECTIONS if getattr(self, "fi_mode", False) else self.EQUITY_REPORT_SECTIONS
         count = 0
         for section in self.report_sections:
-            if section not in self.REPORT_SECTIONS:
+            if section not in active_report_sections:
                 continue
-            _, finalizing_agent = self.REPORT_SECTIONS[section]
+            _, finalizing_agent = active_report_sections[section]
             # Report is complete if it has content AND its finalizing agent is done
             has_content = self.report_sections.get(section) is not None
             agent_done = self.agent_status.get(finalizing_agent) == "completed"
@@ -202,16 +239,26 @@ class MessageBuffer:
         if latest_section and latest_content:
             # Format the current section for display
             section_titles = {
+                # FI
+                "macro_policy_report": "Macro / Policy Analysis",
+                "curve_technicals_report": "Curve Technicals Analysis",
+                "fed_speak_report": "Fed Speak Analysis",
+                "macro_calendar_report": "Macro Calendar Analysis",
+                "direction_debate_state": "Yield Direction Debate",
+                "shape_debate_state": "Curve Shape Debate",
+                # Equity
                 "market_report": "Market Analysis",
                 "sentiment_report": "Social Sentiment",
                 "news_report": "News Analysis",
                 "fundamentals_report": "Fundamentals Analysis",
                 "investment_plan": "Research Team Decision",
+                # Common
                 "trader_investment_plan": "Trading Team Plan",
                 "final_trade_decision": "Portfolio Management Decision",
             }
+            title = section_titles.get(latest_section, latest_section)
             self.current_report = (
-                f"### {section_titles[latest_section]}\n{latest_content}"
+                f"### {title}\n{latest_content}"
             )
 
         # Update the final complete report
@@ -220,7 +267,33 @@ class MessageBuffer:
     def _update_final_report(self):
         report_parts = []
 
-        # Analyst Team Reports - use .get() to handle missing sections
+        # FI Analyst Team Reports
+        fi_analyst_sections = [
+            "macro_policy_report",
+            "curve_technicals_report",
+            "fed_speak_report",
+            "macro_calendar_report",
+        ]
+        if any(self.report_sections.get(s) for s in fi_analyst_sections):
+            report_parts.append("## Analyst Team Reports (Fixed Income)")
+            if self.report_sections.get("macro_policy_report"):
+                report_parts.append(
+                    f"### Macro / Policy Analysis\n{self.report_sections['macro_policy_report']}"
+                )
+            if self.report_sections.get("curve_technicals_report"):
+                report_parts.append(
+                    f"### Curve Technicals Analysis\n{self.report_sections['curve_technicals_report']}"
+                )
+            if self.report_sections.get("fed_speak_report"):
+                report_parts.append(
+                    f"### Fed Speak Analysis\n{self.report_sections['fed_speak_report']}"
+                )
+            if self.report_sections.get("macro_calendar_report"):
+                report_parts.append(
+                    f"### Macro Calendar Analysis\n{self.report_sections['macro_calendar_report']}"
+                )
+
+        # Equity Analyst Team Reports - use .get() to handle missing sections
         analyst_sections = ["market_report", "sentiment_report", "news_report", "fundamentals_report"]
         if any(self.report_sections.get(section) for section in analyst_sections):
             report_parts.append("## Analyst Team Reports")
@@ -241,7 +314,17 @@ class MessageBuffer:
                     f"### Fundamentals Analysis\n{self.report_sections['fundamentals_report']}"
                 )
 
-        # Research Team Reports
+        # FI Direction Debate Reports
+        if self.report_sections.get("direction_debate_state"):
+            report_parts.append("## Yield Direction Debate Decision")
+            report_parts.append(f"{self.report_sections['direction_debate_state']}")
+
+        # FI Shape Debate Reports
+        if self.report_sections.get("shape_debate_state"):
+            report_parts.append("## Curve Shape Debate Decision")
+            report_parts.append(f"{self.report_sections['shape_debate_state']}")
+
+        # Equity Research Team Reports
         if self.report_sections.get("investment_plan"):
             report_parts.append("## Research Team Decision")
             report_parts.append(f"{self.report_sections['investment_plan']}")
@@ -315,10 +398,29 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
     # Group agents by team - filter to only include agents in agent_status
     all_teams = {
         "Analyst Team": [
+            "Macro Policy Analyst",
+            "Curve Technicals Analyst",
+            "Fed Speak Analyst",
+            "Macro Calendar Analyst",
             "Market Analyst",
             "Sentiment Analyst",
             "News Analyst",
             "Fundamentals Analyst",
+        ],
+        "Direction Debate": [
+            "Higher Yields Researcher",
+            "Lower Yields Researcher",
+            "Direction Research Manager",
+        ],
+        "Shape Debate": [
+            "Steepener Researcher",
+            "Flattener Researcher",
+            "Shape Research Manager",
+        ],
+        "FI Trading": [
+            "FI Trader",
+            "FI Consistency Check",
+            "FI Portfolio Manager",
         ],
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
         "Trading Team": ["Trader"],
@@ -772,6 +874,16 @@ def display_complete_report(final_state):
 
     # I. Analyst Team Reports
     analysts = []
+    # Fixed-Income Analysts
+    if final_state.get("macro_policy_report"):
+        analysts.append(("Macro Policy Analyst", final_state["macro_policy_report"]))
+    if final_state.get("curve_technicals_report"):
+        analysts.append(("Curve Technicals Analyst", final_state["curve_technicals_report"]))
+    if final_state.get("fed_speak_report"):
+        analysts.append(("Fed Speak Analyst", final_state["fed_speak_report"]))
+    if final_state.get("macro_calendar_report"):
+        analysts.append(("Macro Calendar Analyst", final_state["macro_calendar_report"]))
+    # Equity Analysts
     if final_state.get("market_report"):
         analysts.append(("Market Analyst", final_state["market_report"]))
     if final_state.get("sentiment_report"):
@@ -785,7 +897,38 @@ def display_complete_report(final_state):
         for title, content in analysts:
             console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
 
-    # II. Research Team Reports
+    # II. Research Team / Debate Reports
+    # FI Direction Debate
+    if final_state.get("direction_debate_state"):
+        debate = final_state["direction_debate_state"]
+        dir_reports = []
+        if debate.get("higher_yields_history"):
+            dir_reports.append(("Higher Yields Researcher", debate["higher_yields_history"]))
+        if debate.get("lower_yields_history"):
+            dir_reports.append(("Lower Yields Researcher", debate["lower_yields_history"]))
+        if debate.get("judge_decision"):
+            dir_reports.append(("Direction Research Manager", debate["judge_decision"]))
+        if dir_reports:
+            console.print(Panel("[bold]II. Direction Debate Decision[/bold]", border_style="magenta"))
+            for title, content in dir_reports:
+                console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
+
+    # FI Shape Debate
+    if final_state.get("shape_debate_state"):
+        shape = final_state["shape_debate_state"]
+        shape_reports = []
+        if shape.get("steepener_history"):
+            shape_reports.append(("Steepener Researcher", shape["steepener_history"]))
+        if shape.get("flattener_history"):
+            shape_reports.append(("Flattener Researcher", shape["flattener_history"]))
+        if shape.get("judge_decision"):
+            shape_reports.append(("Shape Research Manager", shape["judge_decision"]))
+        if shape_reports:
+            console.print(Panel("[bold]III. Shape Debate Decision[/bold]", border_style="magenta"))
+            for title, content in shape_reports:
+                console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
+
+    # Equity Research Team
     if final_state.get("investment_debate_state"):
         debate = final_state["investment_debate_state"]
         research = []
@@ -800,12 +943,14 @@ def display_complete_report(final_state):
             for title, content in research:
                 console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
 
-    # III. Trading Team
+    # Trading Team
     if final_state.get("trader_investment_plan"):
-        console.print(Panel("[bold]III. Trading Team Plan[/bold]", border_style="yellow"))
-        console.print(Panel(Markdown(final_state["trader_investment_plan"]), title="Trader", border_style="blue", padding=(1, 2)))
+        team_title = "Trading Team Plan (Fixed Income)" if final_state.get("direction_debate_state") else "III. Trading Team Plan"
+        agent_title = "FI Trader" if final_state.get("direction_debate_state") else "Trader"
+        console.print(Panel(f"[bold]{team_title}[/bold]", border_style="yellow"))
+        console.print(Panel(Markdown(final_state["trader_investment_plan"]), title=agent_title, border_style="blue", padding=(1, 2)))
 
-    # IV. Risk Management Team
+    # IV. Risk Management Team (Equity)
     if final_state.get("risk_debate_state"):
         risk = final_state["risk_debate_state"]
         risk_reports = []
@@ -825,6 +970,11 @@ def display_complete_report(final_state):
             console.print(Panel("[bold]V. Portfolio Manager Decision[/bold]", border_style="green"))
             console.print(Panel(Markdown(risk["judge_decision"]), title="Portfolio Manager", border_style="blue", padding=(1, 2)))
 
+    # V. FI Portfolio Manager Decision
+    if final_state.get("final_trade_decision") and not final_state.get("risk_debate_state"):
+        console.print(Panel("[bold]Portfolio Management Decision (Fixed Income)[/bold]", border_style="green"))
+        console.print(Panel(Markdown(final_state["final_trade_decision"]), title="FI Portfolio Manager", border_style="blue", padding=(1, 2)))
+
 
 def update_research_team_status(status):
     """Update status for research team members (not Trader)."""
@@ -834,14 +984,31 @@ def update_research_team_status(status):
 
 
 # Ordered list of analysts for status transitions
-ANALYST_ORDER = ["market", "social", "news", "fundamentals"]
+ANALYST_ORDER = [
+    "macro_policy",
+    "curve_technicals",
+    "fed_speak",
+    "macro_calendar",
+    "market",
+    "social",
+    "news",
+    "fundamentals",
+]
 ANALYST_AGENT_NAMES = {
+    "macro_policy": "Macro Policy Analyst",
+    "curve_technicals": "Curve Technicals Analyst",
+    "fed_speak": "Fed Speak Analyst",
+    "macro_calendar": "Macro Calendar Analyst",
     "market": "Market Analyst",
     "social": "Sentiment Analyst",
     "news": "News Analyst",
     "fundamentals": "Fundamentals Analyst",
 }
 ANALYST_REPORT_MAP = {
+    "macro_policy": "macro_policy_report",
+    "curve_technicals": "curve_technicals_report",
+    "fed_speak": "fed_speak_report",
+    "macro_calendar": "macro_calendar_report",
     "market": "market_report",
     "social": "sentiment_report",
     "news": "news_report",
@@ -858,7 +1025,7 @@ def update_analyst_statuses(message_buffer, chunk, wall_time_tracker=None):
     - Analysts with reports = completed
     - First analyst without report = in_progress
     - Remaining analysts without reports = pending
-    - When all analysts done, set Bull Researcher to in_progress
+    - When all analysts done, transition next stage to in_progress
     """
     selected = message_buffer.selected_analysts
     found_active = False
@@ -888,13 +1055,12 @@ def update_analyst_statuses(message_buffer, chunk, wall_time_tracker=None):
         else:
             message_buffer.update_agent_status(agent_name, "pending")
 
-    # When all analysts complete, transition research team to in_progress
-    if (
-        not found_active
-        and selected
-        and message_buffer.agent_status.get("Bull Researcher") == "pending"
-    ):
-        message_buffer.update_agent_status("Bull Researcher", "in_progress")
+    # When all analysts complete, transition research / debate team to in_progress
+    if not found_active and selected:
+        if message_buffer.agent_status.get("Bull Researcher") == "pending":
+            message_buffer.update_agent_status("Bull Researcher", "in_progress")
+        elif message_buffer.agent_status.get("Higher Yields Researcher") == "pending":
+            message_buffer.update_agent_status("Higher Yields Researcher", "in_progress")
 
 def extract_content_string(content):
     """Extract string content from various message formats.
@@ -1168,7 +1334,61 @@ def run_analysis(checkpoint: bool | None = None):
                     wall_time_tracker=analyst_wall_time_tracker,
                 )
 
-                # Research Team - Handle Investment Debate State
+                # Fixed Income - Handle Direction Debate State
+                if chunk.get("direction_debate_state"):
+                    debate_state = chunk["direction_debate_state"]
+                    higher_hist = debate_state.get("higher_yields_history", "").strip()
+                    lower_hist = debate_state.get("lower_yields_history", "").strip()
+                    judge = debate_state.get("judge_decision", "").strip()
+
+                    if higher_hist or lower_hist:
+                        if higher_hist and message_buffer.agent_status.get("Higher Yields Researcher") != "completed":
+                            message_buffer.update_agent_status("Higher Yields Researcher", "in_progress")
+                            message_buffer.update_report_section(
+                                "direction_debate_state", f"### Higher Yields Arguments\n{higher_hist}"
+                            )
+                        if lower_hist and message_buffer.agent_status.get("Lower Yields Researcher") != "completed":
+                            message_buffer.update_agent_status("Lower Yields Researcher", "in_progress")
+                            message_buffer.update_report_section(
+                                "direction_debate_state", f"### Lower Yields Arguments\n{lower_hist}"
+                            )
+                    if judge:
+                        message_buffer.update_agent_status("Higher Yields Researcher", "completed")
+                        message_buffer.update_agent_status("Lower Yields Researcher", "completed")
+                        message_buffer.update_agent_status("Direction Research Manager", "completed")
+                        message_buffer.update_report_section(
+                            "direction_debate_state", f"### Direction Debate Outcome\n{judge}"
+                        )
+                        message_buffer.update_agent_status("Steepener Researcher", "in_progress")
+
+                # Fixed Income - Handle Shape Debate State
+                if chunk.get("shape_debate_state"):
+                    shape_state = chunk["shape_debate_state"]
+                    steep_hist = shape_state.get("steepener_history", "").strip()
+                    flat_hist = shape_state.get("flattener_history", "").strip()
+                    judge = shape_state.get("judge_decision", "").strip()
+
+                    if steep_hist or flat_hist:
+                        if steep_hist and message_buffer.agent_status.get("Steepener Researcher") != "completed":
+                            message_buffer.update_agent_status("Steepener Researcher", "in_progress")
+                            message_buffer.update_report_section(
+                                "shape_debate_state", f"### Steepener Arguments\n{steep_hist}"
+                            )
+                        if flat_hist and message_buffer.agent_status.get("Flattener Researcher") != "completed":
+                            message_buffer.update_agent_status("Flattener Researcher", "in_progress")
+                            message_buffer.update_report_section(
+                                "shape_debate_state", f"### Flattener Arguments\n{flat_hist}"
+                            )
+                    if judge:
+                        message_buffer.update_agent_status("Steepener Researcher", "completed")
+                        message_buffer.update_agent_status("Flattener Researcher", "completed")
+                        message_buffer.update_agent_status("Shape Research Manager", "completed")
+                        message_buffer.update_report_section(
+                            "shape_debate_state", f"### Shape Debate Outcome\n{judge}"
+                        )
+                        message_buffer.update_agent_status("FI Trader", "in_progress")
+
+                # Research Team - Handle Investment Debate State (Equity)
                 if chunk.get("investment_debate_state"):
                     debate_state = chunk["investment_debate_state"]
                     bull_hist = debate_state.get("bull_history", "").strip()
@@ -1198,11 +1418,21 @@ def run_analysis(checkpoint: bool | None = None):
                     message_buffer.update_report_section(
                         "trader_investment_plan", chunk["trader_investment_plan"]
                     )
-                    if message_buffer.agent_status.get("Trader") != "completed":
+                    if (
+                        message_buffer.agent_status.get("Trader") is not None
+                        and message_buffer.agent_status.get("Trader") != "completed"
+                    ):
                         message_buffer.update_agent_status("Trader", "completed")
                         message_buffer.update_agent_status("Aggressive Analyst", "in_progress")
+                    elif (
+                        message_buffer.agent_status.get("FI Trader") is not None
+                        and message_buffer.agent_status.get("FI Trader") != "completed"
+                    ):
+                        message_buffer.update_agent_status("FI Trader", "completed")
+                        message_buffer.update_agent_status("FI Consistency Check", "completed")
+                        message_buffer.update_agent_status("FI Portfolio Manager", "in_progress")
 
-                # Risk Management Team - Handle Risk Debate State
+                # Risk Management Team - Handle Risk Debate State (Equity)
                 if chunk.get("risk_debate_state"):
                     risk_state = chunk["risk_debate_state"]
                     agg_hist = risk_state.get("aggressive_history", "").strip()
@@ -1237,6 +1467,13 @@ def run_analysis(checkpoint: bool | None = None):
                         message_buffer.update_agent_status("Conservative Analyst", "completed")
                         message_buffer.update_agent_status("Neutral Analyst", "completed")
                         message_buffer.update_agent_status("Portfolio Manager", "completed")
+
+                # FI Portfolio Manager Decision
+                if chunk.get("final_trade_decision") and message_buffer.agent_status.get("FI Portfolio Manager") is not None:
+                    message_buffer.update_report_section(
+                        "final_trade_decision", chunk["final_trade_decision"]
+                    )
+                    message_buffer.update_agent_status("FI Portfolio Manager", "completed")
 
                 # Update the display
                 update_display(layout, stats_handler=stats_handler, start_time=start_time)
