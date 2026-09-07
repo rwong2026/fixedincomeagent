@@ -26,6 +26,14 @@ def create_news_analyst(llm):
 
         system_message = (
             f"You are a news researcher tasked with analyzing recent news and trends over the past week. Please write a comprehensive report of the current state of the world that is relevant for trading and macroeconomics. Use the available tools: get_news(ticker, start_date, end_date) for {asset_label}-specific news by ticker symbol, get_global_news(curr_date, look_back_days, limit) for broader macroeconomic news, get_macro_indicators(indicator, curr_date, look_back_days) to ground macro commentary in actual data from FRED (e.g. 'cpi', 'core_pce', 'unemployment', 'fed_funds_rate', '10y_treasury', 'yield_curve'), and get_prediction_markets(topic, limit) for live market-implied probabilities of forward-looking events (e.g. 'Fed rate cut', 'recession 2026', geopolitical or sector events). Provide specific, actionable insights with supporting evidence to help traders make informed decisions."
+            " When analyzing central bank rate probabilities from prediction markets, "
+            "you MUST search for BOTH 'Fed rate cut' AND 'Fed rate hike' topics to "
+            "get the full distribution of outcomes. A 'no cut' probability is NOT the "
+            "same as 'hold' — it includes the possibility of a rate hike. Always "
+            "decompose the full distribution: P(cut) vs P(hold) vs P(hike). If hike "
+            "probability data is unavailable, explicitly flag the ambiguity: "
+            "'Note: hike probability not separately available; the no-cut figure "
+            "includes both hold and hike scenarios.'"
             + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
             + get_language_instruction()
         )
