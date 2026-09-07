@@ -43,7 +43,7 @@ MACRO_POLICY_FULL = {
     "get_fomc_calendar",
     "get_fed_speeches",
 }
-FED_SPEAK_FULL = {"get_fed_speeches", "get_fomc_calendar", "get_cot_data"}
+FED_SPEAK_FULL = {"get_fed_speeches", "get_fomc_calendar", "get_cot_data", "get_global_news"}
 
 INFLATION_COMPONENT_TOOLS = {
     "get_inflation_nowcast",
@@ -184,7 +184,7 @@ def test_fed_speak_drops_cot_tool():
 def test_fed_speak_drops_speeches_tool_keeps_cot():
     disabled = ablation_disabled_tools(AblationConfig(disable_fed_speak=True))
     names, _ = _bound_names(create_fed_speak_analyst, disabled)
-    assert names == {"get_fomc_calendar", "get_cot_data"}
+    assert names == {"get_fomc_calendar", "get_cot_data", "get_global_news"}
 
 
 # ---------------------------------------------------------------------------
@@ -208,7 +208,11 @@ def test_tool_nodes_filtered_by_disabled_tools():
     assert set(nodes["macro_policy"].tools_by_name) == (
         MACRO_POLICY_FULL - INFLATION_COMPONENT_TOOLS
     )
-    assert set(nodes["fed_speak"].tools_by_name) == {"get_fed_speeches", "get_fomc_calendar"}
+    assert set(nodes["fed_speak"].tools_by_name) == {
+        "get_fed_speeches",
+        "get_fomc_calendar",
+        "get_global_news",
+    }
     # Untouched analysts keep their full tool set.
     assert "get_treasury_par_yields" in nodes["curve_technicals"].tools_by_name
 
@@ -258,7 +262,7 @@ def test_graph_setup_threads_disabled_tools_to_analysts():
     # The macro policy analyst (the only list with ALFRED) ran reduced.
     assert MACRO_POLICY_FULL - INFLATION_COMPONENT_TOOLS in bound_sets
     # The fed speak analyst (fomc + speeches, no ALFRED) lost the COT tool.
-    assert {"get_fed_speeches", "get_fomc_calendar"} in bound_sets
+    assert {"get_fed_speeches", "get_fomc_calendar", "get_global_news"} in bound_sets
 
 
 # ---------------------------------------------------------------------------

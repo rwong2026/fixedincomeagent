@@ -21,6 +21,7 @@ from fixedincomeagent.agents.utils.agent_utils import (
     get_cashflow,
     get_consumer_inflation_expectations,
     get_cot_data,
+    get_curve_spreads,
     get_fed_speeches,
     get_fomc_calendar,
     get_fred_series,
@@ -307,6 +308,7 @@ class TradingAgentsGraph:
                 [
                     get_fred_series,
                     get_treasury_par_yields,
+                    get_curve_spreads,
                 ],
                 handle_tool_errors=True,
             ),
@@ -315,6 +317,7 @@ class TradingAgentsGraph:
                     get_fed_speeches,
                     get_fomc_calendar,
                     get_cot_data,
+                    get_global_news,
                 ],
                 handle_tool_errors=True,
             ),
