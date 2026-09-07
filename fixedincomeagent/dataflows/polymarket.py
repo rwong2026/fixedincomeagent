@@ -9,6 +9,11 @@ Uses Polymarket's public Gamma API (https://gamma-api.polymarket.com) — no key
 no auth. Each market's ``outcomePrices`` are the implied probabilities of its
 outcomes (a "Yes" at 0.76 means the market prices a 76% chance).
 """
+# TODO: Issue 4 long-term fix — integrate CME FedWatch or OIS-implied rate
+# path data to provide cut/hold/hike probability decomposition per FOMC
+# meeting. Polymarket's binary "rate cut yes/no" markets hide hike
+# probability and the current prompt-level workaround (Task 2) is a
+# mitigation, not a fix. See implementation_plan.md for context.
 import json
 import logging
 from datetime import datetime, timezone
