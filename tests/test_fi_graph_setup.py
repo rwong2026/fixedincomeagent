@@ -89,8 +89,8 @@ EXPECTED_TOOL_NAMES = {
         "get_fomc_calendar",
         "get_fed_speeches",
     },
-    "curve_technicals": {"get_fred_series", "get_treasury_par_yields"},
-    "fed_speak": {"get_fed_speeches", "get_fomc_calendar", "get_cot_data"},
+    "curve_technicals": {"get_fred_series", "get_treasury_par_yields", "get_curve_spreads"},
+    "fed_speak": {"get_fed_speeches", "get_fomc_calendar", "get_cot_data", "get_global_news"},
     "macro_calendar": {"get_fomc_calendar", "get_fred_series", "get_auction_results"},
 }
 
