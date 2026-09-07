@@ -11,7 +11,7 @@ from fixedincomeagent.agents.analysts.fed_speak_analyst import (
     create_fed_speak_analyst,
 )
 
-EXPECTED_TOOL_NAMES = {"get_fed_speeches", "get_fomc_calendar", "get_cot_data"}
+EXPECTED_TOOL_NAMES = {"get_fed_speeches", "get_fomc_calendar", "get_cot_data", "get_global_news"}
 
 
 class _FakeLLM:
@@ -89,3 +89,11 @@ def test_tool_call_response_leaves_report_empty():
     result = create_fed_speak_analyst(llm)(_state())
     assert result["fed_speak_report"] == ""
     assert len(result["messages"]) == 1
+
+
+def test_prompt_includes_data_gap_degradation_rule():
+    llm = _FakeLLM()
+    create_fed_speak_analyst(llm)(_state())
+    prompt = llm.seen_prompt
+    assert "DATA GAP" in prompt, "prompt must include DATA GAP confidence rule"
+    assert "confidence" in prompt.lower(), "prompt must mention confidence degradation"

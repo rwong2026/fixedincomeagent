@@ -4,6 +4,7 @@ from fixedincomeagent.agents.utils.agent_utils import (
     get_cot_data,
     get_fed_speeches,
     get_fomc_calendar,
+    get_global_news,
     get_language_instruction,
 )
 
@@ -16,6 +17,7 @@ def create_fed_speak_analyst(llm, disabled_tools=None):
             get_fed_speeches,
             get_fomc_calendar,
             get_cot_data,
+            get_global_news,
         ]
         if disabled_tools:
             tools = [t for t in tools if t.name not in disabled_tools]
@@ -49,6 +51,15 @@ def create_fed_speak_analyst(llm, disabled_tools=None):
             "committee-wide shift; never let one speech dominate the call. "
             "Positioning is a contrarian signal at extremes — say so "
             "explicitly when it is stretched."
+            " If get_fed_speeches returns an error, fallback message, or "
+            "'MANUAL update' note, use get_global_news to search for recent "
+            "Fed speech coverage as a backup data source."
+            " **DATA GAP RULE:** If any data tool returns an error or "
+            "fallback/unavailable message, you MUST: "
+            "(1) state which data source failed in your report, "
+            "(2) explicitly mark your confidence as LOW for affected sections, "
+            "(3) prefix the affected section heading with '⚠️ DATA GAP'. "
+            "Never fill a data gap with inference — say what you don't know."
             + get_language_instruction()
         )
 

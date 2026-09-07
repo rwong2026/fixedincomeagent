@@ -36,6 +36,48 @@ def _request(url: str) -> str:
     return response.text
 
 
+SPEECHES_JSON_URL = "https://www.federalreserve.gov/json/ne-speeches.json"
+
+
+def _request_json(url: str) -> list[dict]:
+    """GET the JSON speeches endpoint and return the parsed list."""
+    response = requests.get(url, timeout=REQUEST_TIMEOUT)
+    response.raise_for_status()
+    return response.json()
+
+
+def _parse_json_items(data: list[dict]) -> list[dict]:
+    """Parse the Fed's JSON speeches array into the same dict format as RSS.
+
+    Each JSON object has keys: d (date str), t (title), s (speaker),
+    lo (location), l (relative link path).
+    """
+    items = []
+    for entry in data:
+        raw_date = entry.get("d", "")
+        title = entry.get("t", "").strip()
+        speaker = entry.get("s", "").strip()
+        location = entry.get("lo", "").strip()
+        rel_link = entry.get("l", "").strip()
+        if not raw_date or not title:
+            continue
+        try:
+            day = datetime.strptime(raw_date.split(" ")[0], "%m/%d/%Y").date()
+        except ValueError:
+            continue
+        link = f"https://www.federalreserve.gov{rel_link}" if rel_link else ""
+        items.append(
+            {
+                "speaker": speaker,
+                "title": title,
+                "link": link,
+                "summary": location,
+                "date": day,
+            }
+        )
+    return items
+
+
 class _FeedShapeError(ValueError):
     """The RSS feed returned 200 with an unexpected structure."""
 
@@ -92,6 +134,9 @@ def _fallback(curr_date: str, start: date, reason: str) -> str:
 def get_fed_speeches(curr_date: str, look_back_days: int = DEFAULT_LOOKBACK_DAYS) -> str:
     """Fetch recent Fed official speeches as a markdown report.
 
+    Tries the RSS feed first, then falls back to the JSON endpoint at
+    /json/ne-speeches.json if the RSS feed is unavailable.
+
     Args:
         curr_date: The as-of date (yyyy-mm-dd). Speeches published after it
             are excluded, so a historical run never sees future speeches.
@@ -99,24 +144,37 @@ def get_fed_speeches(curr_date: str, look_back_days: int = DEFAULT_LOOKBACK_DAYS
 
     Returns:
         A markdown table of in-window speeches (most recent first), an
-        explicit no-speeches note, or a manual-update fallback when the feed
-        is unreachable or its shape changed.
+        explicit no-speeches note, or a manual-update fallback when both
+        sources are unreachable.
     """
     end_dt = datetime.strptime(curr_date, "%Y-%m-%d").date()
     start_dt = end_dt - timedelta(days=look_back_days)
 
+    items = None
+    source_label = "RSS feed"
+
+    # Stage 1: try RSS
     try:
         items = _parse_items(_request(SPEECHES_RSS_URL))
-    except (requests.RequestException, ET.ParseError, _FeedShapeError) as e:
-        logger.warning("Fed speeches feed unavailable: %s", e)
-        return _fallback(curr_date, start_dt, e)
+        source_label = f"RSS feed ({SPEECHES_RSS_URL})"
+    except (requests.RequestException, ET.ParseError, _FeedShapeError) as rss_err:
+        logger.warning("Fed speeches RSS unavailable: %s; trying JSON fallback", rss_err)
+
+        # Stage 2: try JSON
+        try:
+            raw = _request_json(SPEECHES_JSON_URL)
+            items = _parse_json_items(raw)
+            source_label = f"JSON endpoint ({SPEECHES_JSON_URL})"
+        except (requests.RequestException, ValueError, TypeError) as json_err:
+            logger.warning("Fed speeches JSON also unavailable: %s", json_err)
+            return _fallback(curr_date, start_dt, f"RSS: {rss_err}; JSON: {json_err}")
 
     window = [s for s in items if start_dt <= s["date"] <= end_dt]
     window.sort(key=lambda s: s["date"], reverse=True)
 
     header = (
         "## Recent Fed Speeches\n"
-        f"- Source: Federal Reserve RSS feed ({SPEECHES_RSS_URL})\n"
+        f"- Source: {source_label}\n"
         f"- Window: {start_dt} to {end_dt}\n"
     )
     if not window:
