@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage, RemoveMessage
 
 # Import tools from separate utility files
 from fixedincomeagent.agents.utils.core_stock_tools import get_stock_data
+from fixedincomeagent.agents.utils.curve_spread_tools import get_curve_spreads
 from fixedincomeagent.agents.utils.fi_data_tools import (
     get_alfred_vintage,
     get_auction_results,

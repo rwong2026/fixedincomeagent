@@ -11,7 +11,7 @@ from fixedincomeagent.agents.analysts.curve_technicals_analyst import (
     create_curve_technicals_analyst,
 )
 
-EXPECTED_TOOL_NAMES = {"get_fred_series", "get_treasury_par_yields"}
+EXPECTED_TOOL_NAMES = {"get_fred_series", "get_treasury_par_yields", "get_curve_spreads"}
 
 
 class _FakeLLM:

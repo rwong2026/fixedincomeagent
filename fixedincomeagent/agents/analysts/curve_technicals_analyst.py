@@ -1,6 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from fixedincomeagent.agents.utils.agent_utils import (
+    get_curve_spreads,
     get_fred_series,
     get_language_instruction,
     get_treasury_par_yields,
@@ -33,6 +34,7 @@ def create_curve_technicals_analyst(llm):
         tools = [
             get_fred_series,
             get_treasury_par_yields,
+            get_curve_spreads,
         ]
 
         system_message = (
@@ -65,6 +67,10 @@ def create_curve_technicals_analyst(llm):
             "bull-flattening) by whether yields are rising or falling as the "
             "curve moves — the direction of rates matters as much as the "
             "slope."
+            " **IMPORTANT: For spread and butterfly calculations, you MUST call"
+            " get_curve_spreads(curr_date, look_back_days) and report its"
+            " pre-computed values verbatim. Do NOT compute spreads yourself —"
+            " use the exact basis-point values from the tool output.**"
             + get_language_instruction()
         )
 
