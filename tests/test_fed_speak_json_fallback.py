@@ -11,6 +11,8 @@ import requests
 
 from fixedincomeagent.dataflows.fed_speeches import (
     _parse_json_items,
+    _request,
+    _request_json,
     get_fed_speeches,
 )
 
@@ -72,3 +74,31 @@ def test_fallback_also_fails_returns_manual_note(mock_json, mock_rss):
     mock_json.side_effect = requests.ConnectionError("JSON also down")
     result = get_fed_speeches("2026-09-04", look_back_days=14)
     assert "unavailable" in result.lower() or "MANUAL" in result
+
+
+@pytest.mark.unit
+@patch("fixedincomeagent.dataflows.fed_speeches.requests.get")
+def test_request_json_handles_utf8_bom(mock_get):
+    class FakeResponse:
+        content = b'\xef\xbb\xbf[{"d": "9/3/2026", "t": "Test Speech", "s": "Waller", "lo": "D.C.", "l": "/test"}]'
+        def raise_for_status(self):
+            pass
+
+    mock_get.return_value = FakeResponse()
+    items = _request_json("https://fake.url")
+    assert len(items) == 1
+    assert items[0]["t"] == "Test Speech"
+
+
+@pytest.mark.unit
+@patch("fixedincomeagent.dataflows.fed_speeches.requests.get")
+def test_request_handles_utf8_bom(mock_get):
+    class FakeResponse:
+        content = b'\xef\xbb\xbf<rss><channel></channel></rss>'
+        def raise_for_status(self):
+            pass
+
+    mock_get.return_value = FakeResponse()
+    text = _request("https://fake.url")
+    assert text.startswith("<rss>")
+    assert not text.startswith("\ufeff")

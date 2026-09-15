@@ -1,0 +1,7 @@
+/Users/rong/fixedincomeagent/AGENTS.md
+/Users/rong/fixedincomeagent/CHANGELOG.md
+/Users/rong/fixedincomeagent/GEMINI.md
+/Users/rong/fixedincomeagent/README.md
+/Users/rong/fixedincomeagent/cli/static/welcome.txt
+/Users/rong/fixedincomeagent/graphify-out/memory/query_20260906_081558_7c30376d_what_equity_or_single_stock_elements_are_in_the_co.md
+/Users/rong/fixedincomeagent/handover.md

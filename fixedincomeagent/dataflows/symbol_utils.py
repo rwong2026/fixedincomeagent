@@ -67,6 +67,12 @@ _ALIASES = {
     "GER40": "^GDAXI", "GER30": "^GDAXI", "DE40": "^GDAXI",
     "UK100": "^FTSE", "JP225": "^N225", "JPN225": "^N225",
     "FRA40": "^FCHI", "EU50": "^STOXX50E", "HK50": "^HSI",
+    # US Treasury Yield indices
+    "10Y": "^TNX", "US10Y": "^TNX", "UST10Y": "^TNX", "UST": "^TNX",
+    "5Y": "^FVX", "US5Y": "^FVX", "UST5Y": "^FVX",
+    "30Y": "^TYX", "US30Y": "^TYX", "UST30Y": "^TYX",
+    "2Y": "^IRX", "US2Y": "^IRX", "UST2Y": "^IRX",
+    "13W": "^IRX", "3M": "^IRX",
 }
 
 # Yahoo symbols may contain letters, digits, and these structural characters.

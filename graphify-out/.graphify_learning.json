@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-09-07T13:55:26.522586+00:00",
+  "nodes": {
+    "cli_models_assettype": {
+      "code_fingerprint": "e2f5fcba81125c899a6ae9abfac01264df480f82140f99662278b5a03d160dcf",
+      "label": "AssetType",
+      "last": "2026-09-06T08:15:58.321454+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-06T08:15:58.321454+00:00",
+          "outcome": "useful",
+          "q": "what equity or single stock elements are in the code base?"
+        }
+      ],
+      "score": 0.971852021,
+      "source_file": "cli/models.py",
+      "status": "tentative",
+      "uses": 1
+    },
+    "fixedincomeagent_agents_analysts_fundamentals_analyst_create_fundamentals_analyst": {
+      "code_fingerprint": "9a6108e2c245778338b1b30bea555f37a8b984c997cd1f3b0255c1744ffaf6fb",
+      "label": "create_fundamentals_analyst()",
+      "last": "2026-09-06T08:15:58.321454+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-06T08:15:58.321454+00:00",
+          "outcome": "useful",
+          "q": "what equity or single stock elements are in the code base?"
+        }
+      ],
+      "score": 0.971852021,
+      "source_file": "fixedincomeagent/agents/analysts/fundamentals_analyst.py",
+      "status": "tentative",
+      "uses": 1
+    },
+    "fixedincomeagent_agents_utils_agent_utils_build_instrument_context": {
+      "code_fingerprint": "43e14751dd8a28abadfb9b9998e65324b834f42c2c2c85d0d9f9e968cfc8c432",
+      "label": "build_instrument_context()",
+      "last": "2026-09-06T08:15:58.321454+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-06T08:15:58.321454+00:00",
+          "outcome": "useful",
+          "q": "what equity or single stock elements are in the code base?"
+        }
+      ],
+      "score": 0.971852021,
+      "source_file": "fixedincomeagent/agents/utils/agent_utils.py",
+      "status": "tentative",
+      "uses": 1
+    },
+    "fixedincomeagent_dataflows_stockstats_utils_stockstatsutils": {
+      "code_fingerprint": "936b347ded47d1346b3a3d23f39a380fb0570f4b98681ef7c919ec7d5802b12e",
+      "label": "StockstatsUtils",
+      "last": "2026-09-06T08:15:58.321454+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-06T08:15:58.321454+00:00",
+          "outcome": "useful",
+          "q": "what equity or single stock elements are in the code base?"
+        }
+      ],
+      "score": 0.971852021,
+      "source_file": "fixedincomeagent/dataflows/stockstats_utils.py",
+      "status": "tentative",
+      "uses": 1
+    },
+    "fixedincomeagent_graph_trading_graph_tradingagentsgraph": {
+      "code_fingerprint": "ca5c80b1e5d6d34854b6fb88ac82b5c35f6694d048b2ee960bb3b5280fe619bc",
+      "label": "TradingAgentsGraph",
+      "last": "2026-09-06T08:15:58.321454+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-06T08:15:58.321454+00:00",
+          "outcome": "useful",
+          "q": "what equity or single stock elements are in the code base?"
+        }
+      ],
+      "score": 0.971852021,
+      "source_file": "fixedincomeagent/graph/trading_graph.py",
+      "status": "tentative",
+      "uses": 1
+    },
+    "tests_test_fi_graph_wiring_test_equity_mode_unchanged": {
+      "code_fingerprint": "93f5d0d2905dc10c9d9f2aa80ee55e5ce0ff5f4e2591cbc275a7ac65b121fdba",
+      "label": "test_equity_mode_unchanged()",
+      "last": "2026-09-06T08:15:58.321454+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-06T08:15:58.321454+00:00",
+          "outcome": "useful",
+          "q": "what equity or single stock elements are in the code base?"
+        }
+      ],
+      "score": 0.971852021,
+      "source_file": "tests/test_fi_graph_wiring.py",
+      "status": "tentative",
+      "uses": 1
+    }
+  },
+  "version": 1
+}

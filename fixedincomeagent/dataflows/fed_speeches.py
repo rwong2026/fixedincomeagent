@@ -11,6 +11,7 @@ If the feed is unreachable or its shape has changed, the report falls back to
 a note flagging the section for MANUAL update from the human speeches page —
 never a false "no speeches" report.
 """
+import json
 import logging
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
@@ -30,20 +31,24 @@ DEFAULT_LOOKBACK_DAYS = 14
 
 
 def _request(url: str) -> str:
-    """GET the RSS feed and return the raw response body."""
+    """GET the RSS feed and return the decoded response body (stripping any UTF-8 BOM)."""
     response = requests.get(url, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
-    return response.text
+    # The Fed RSS feed serves a UTF-8 BOM (\xef\xbb\xbf) which breaks xml.etree.ElementTree.fromstring
+    # when decoded as plain text with standard utf-8. utf-8-sig strips the BOM cleanly.
+    return response.content.decode("utf-8-sig")
 
 
 SPEECHES_JSON_URL = "https://www.federalreserve.gov/json/ne-speeches.json"
 
 
 def _request_json(url: str) -> list[dict]:
-    """GET the JSON speeches endpoint and return the parsed list."""
+    """GET the JSON speeches endpoint and return the parsed list (handling UTF-8 BOM)."""
     response = requests.get(url, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
-    return response.json()
+    # The Fed's ne-speeches.json serves a UTF-8 BOM (\xef\xbb\xbf). Standard response.json()
+    # crashes with "Unexpected UTF-8 BOM (decode using utf-8-sig)".
+    return json.loads(response.content.decode("utf-8-sig"))
 
 
 def _parse_json_items(data: list[dict]) -> list[dict]:

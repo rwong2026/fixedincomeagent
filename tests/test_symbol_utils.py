@@ -35,6 +35,15 @@ class TestNormalizeSymbol(unittest.TestCase):
         self.assertEqual(normalize_symbol("NAS100"), "^NDX")
         self.assertEqual(normalize_symbol("US30"), "^DJI")
 
+    def test_treasury_yield_aliases(self):
+        self.assertEqual(normalize_symbol("10Y"), "^TNX")
+        self.assertEqual(normalize_symbol("10y"), "^TNX")
+        self.assertEqual(normalize_symbol("US10Y"), "^TNX")
+        self.assertEqual(normalize_symbol("UST"), "^TNX")
+        self.assertEqual(normalize_symbol("5Y"), "^FVX")
+        self.assertEqual(normalize_symbol("30Y"), "^TYX")
+        self.assertEqual(normalize_symbol("2Y"), "^IRX")
+
     def test_forex_pairs_get_x_suffix(self):
         self.assertEqual(normalize_symbol("EURUSD"), "EURUSD=X")
         self.assertEqual(normalize_symbol("GBPJPY"), "GBPJPY=X")
