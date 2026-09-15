@@ -224,3 +224,6 @@ reports/
 
 # Git worktrees
 .worktrees/
+
+# graphify knowledge-graph artifacts (generated)
+graphify-out/
